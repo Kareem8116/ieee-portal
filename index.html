@@ -567,8 +567,7 @@ const CONFIG = {
 
   // Available exams shown in dashboard
   exams: [
-    { id: 'week2-quiz', label: 'Week 2 Quiz', duration: 30, maxGrade: 25, open: true },
-    // Add more exams here as needed
+    // Add exams here when ready
   ],
 };
 
@@ -1214,11 +1213,15 @@ function populateRetakeDropdowns(){
   const targetSel = document.getElementById('retakeTarget');
   if(examSel){
     const prevExam = examSel.value;
-    examSel.innerHTML = '';
-    (CONFIG.exams || []).forEach(ex => {
-      examSel.innerHTML += `<option value="${ex.id}">${ex.label}</option>`;
-    });
-    if(prevExam) examSel.value = prevExam;
+    if(!CONFIG.exams || CONFIG.exams.length===0){
+      examSel.innerHTML = '<option value="">No active exams</option>';
+    } else {
+      examSel.innerHTML = '';
+      CONFIG.exams.forEach(ex => {
+        examSel.innerHTML += `<option value="${ex.id}">${ex.label}</option>`;
+      });
+      if(prevExam) examSel.value = prevExam;
+    }
   }
   if(targetSel){
     const prevTarget = targetSel.value || 'ALL';
