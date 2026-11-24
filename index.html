@@ -707,7 +707,10 @@ function loginWithId(){
 }
 
 function logout(){
+  clearInterval(timerInterval);
+  teardownAntiCheat();
   currentStudent = null;
+  currentExam = null;
   try{ localStorage.removeItem('ieee_student'); }catch(e){}
   document.getElementById('loginId').value = '';
   document.getElementById('loginError').innerHTML = '';
@@ -742,8 +745,9 @@ function renderExams(){
 
   wrap.innerHTML = CONFIG.exams.map(exam => {
     const done = submittedExams.includes(exam.id);
+    const hasActiveState = !done && !!localStorage.getItem('quiz_state_'+currentStudent.id+'_'+exam.id);
     const statusClass = !exam.open ? 'status-locked' : done ? 'status-submitted' : 'status-open';
-    const statusLabel = !exam.open ? 'Locked' : done ? 'Submitted' : 'Open';
+    const statusLabel = !exam.open ? 'Locked' : done ? 'Submitted' : hasActiveState ? 'In Progress' : 'Open';
     const canStart = exam.open && !done;
 
     return `<div class="exam-card">
@@ -753,7 +757,7 @@ function renderExams(){
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
         <span class="exam-status ${statusClass}">${statusLabel}</span>
-        ${canStart ? `<button class="btn btn-primary btn-sm" onclick="startExam('${exam.id}')">Start</button>` : ''}
+        ${canStart ? `<button class="btn btn-primary btn-sm" onclick="startExam('${exam.id}')">${hasActiveState?'Resume':'Start'}</button>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -818,19 +822,60 @@ function renderGrades(grades){
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    QUIZ
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+let examEndTime = 0;
+
+function getExamStateKey(examId){
+  return `quiz_state_${currentStudent.id}_${examId}`;
+}
+
+function saveExamState(){
+  if(!currentStudent || !currentExam || submitted) return;
+  try{
+    localStorage.setItem(getExamStateKey(currentExam.id), JSON.stringify({
+      startTime: quizStartTime.getTime(),
+      endTime: examEndTime,
+      answers,
+      tabSwitchCount
+    }));
+  }catch(e){}
+}
+
 function startExam(examId){
   currentExam = CONFIG.exams.find(e=>e.id===examId);
   if(!currentExam) return;
 
-  answers={};
-  timeLeft=currentExam.duration*60;
   submitted=false;
-  tabSwitchCount=0;
-  quizStartTime=new Date();
+  document.getElementById('unansweredWarn').style.display='none';
+  document.getElementById('unansweredWarn').innerHTML='';
 
+  let saved = null;
+  try{
+    const raw = localStorage.getItem(getExamStateKey(examId));
+    if(raw) saved = JSON.parse(raw);
+  }catch(e){}
+
+  if(saved && saved.endTime && saved.startTime){
+    quizStartTime = new Date(saved.startTime);
+    examEndTime = saved.endTime;
+    answers = saved.answers || {};
+    tabSwitchCount = saved.tabSwitchCount || 0;
+  } else {
+    const now = Date.now();
+    quizStartTime = new Date(now);
+    examEndTime = now + currentExam.duration * 60 * 1000;
+    answers = {};
+    tabSwitchCount = 0;
+    saveExamState();
+  }
+
+  timeLeft = Math.max(0, Math.ceil((examEndTime - Date.now()) / 1000));
   document.getElementById('qInfoName').textContent=currentStudent.name;
   renderQuiz();
   showPage('page-quiz');
+  if(timeLeft <= 0){
+    submitQuiz(true);
+    return;
+  }
   startTimer();
   setupAntiCheat();
 }
@@ -843,19 +888,23 @@ function renderQuiz(){
     card.className='q-card';
     card.id='qcard-'+q.id;
     const letters=['A','B','C','D','E'];
+    const savedAns=answers[q.id];
     let optHtml='';
     if(q.type==='mcq'){
       optHtml=`<div class="options" id="opts-${q.id}">`;
       q.options.forEach((o,oi)=>{
-        optHtml+=`<div class="option" id="opt-${q.id}-${oi}" onclick="selectMCQ(${q.id},${oi})">
+        const selCls=savedAns===oi?' selected':'';
+        optHtml+=`<div class="option${selCls}" id="opt-${q.id}-${oi}" onclick="selectMCQ(${q.id},${oi})">
           <div class="opt-letter" id="optl-${q.id}-${oi}">${letters[oi]}</div>
           <div>${o}</div></div>`;
       });
       optHtml+='</div>';
     } else {
+      const tCls='tf-btn'+(savedAns===true?' selected':'');
+      const fCls='tf-btn'+(savedAns===false?' selected':'');
       optHtml=`<div class="tf-options">
-        <div class="tf-btn" id="tf-${q.id}-true" onclick="selectTF(${q.id},true)">True</div>
-        <div class="tf-btn" id="tf-${q.id}-false" onclick="selectTF(${q.id},false)">False</div>
+        <div class="${tCls}" id="tf-${q.id}-true" onclick="selectTF(${q.id},true)">True</div>
+        <div class="${fCls}" id="tf-${q.id}-false" onclick="selectTF(${q.id},false)">False</div>
       </div>`;
     }
     card.innerHTML=`<div class="q-num">Question ${i+1} of ${QUESTIONS.length}</div>
@@ -872,6 +921,7 @@ function selectMCQ(qid,oi){
     document.getElementById('opt-'+qid+'-'+i).className='option'+(i===oi?' selected':'');
   });
   updateProgress();
+  saveExamState();
 }
 
 function selectTF(qid,val){
@@ -880,6 +930,7 @@ function selectTF(qid,val){
   document.getElementById('tf-'+qid+'-true').className='tf-btn'+(val===true?' selected':'');
   document.getElementById('tf-'+qid+'-false').className='tf-btn'+(val===false?' selected':'');
   updateProgress();
+  saveExamState();
 }
 
 function updateProgress(){
@@ -889,14 +940,20 @@ function updateProgress(){
   document.getElementById('qInfoProgress').textContent=answered+' / '+QUESTIONS.length;
 }
 
+function updateTimerUI(){
+  const m=Math.floor(timeLeft/60),s=timeLeft%60;
+  const el=document.getElementById('timerEl');
+  el.textContent=m+':'+(s<10?'0':'')+s;
+  el.classList.toggle('warn', timeLeft<=300);
+}
+
 function startTimer(){
   clearInterval(timerInterval);
+  timeLeft=Math.max(0, Math.ceil((examEndTime - Date.now())/1000));
+  updateTimerUI();
   timerInterval=setInterval(()=>{
-    timeLeft--;
-    const m=Math.floor(timeLeft/60),s=timeLeft%60;
-    const el=document.getElementById('timerEl');
-    el.textContent=m+':'+(s<10?'0':'')+s;
-    if(timeLeft<=300)el.classList.add('warn');
+    timeLeft=Math.max(0, Math.ceil((examEndTime - Date.now())/1000));
+    updateTimerUI();
     if(timeLeft<=0){clearInterval(timerInterval);submitQuiz(true);}
   },1000);
 }
@@ -914,9 +971,11 @@ function onBlur(){if(!submitted)triggerAC();}
 function triggerAC(){
   if(submitted)return;
   tabSwitchCount++;
+  saveExamState();
   const overlay=document.getElementById('acOverlay');
   overlay.classList.add('show');
   let c=3;document.getElementById('acCount').textContent=c;
+  clearInterval(acTimer);
   acTimer=setInterval(()=>{c--;document.getElementById('acCount').textContent=c;if(c<=0){clearInterval(acTimer);overlay.classList.remove('show');}},1000);
 }
 
@@ -954,8 +1013,9 @@ async function submitQuiz(autoSubmit=false){
   const score=Math.round((correct/QUESTIONS.length)*maxGrade);
   const timeTaken=Math.floor((new Date()-quizStartTime)/1000);
 
-  // Mark as submitted locally
+  // Mark as submitted locally and clear active exam state
   if(currentExam){
+    try{ localStorage.removeItem(getExamStateKey(currentExam.id)); }catch(e){}
     const key='submitted_'+currentStudent.id;
     const done=JSON.parse(localStorage.getItem(key)||'[]');
     if(!done.includes(currentExam.id)){done.push(currentExam.id);localStorage.setItem(key,JSON.stringify(done));}
