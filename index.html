@@ -469,6 +469,22 @@ textarea{resize:vertical;min-height:70px;}
 
     <!-- Submissions -->
     <div class="admin-panel" id="tab-submissions">
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-title">Exam Retake Control</div>
+        <div class="card-sub">Grant 1 retake attempt for a specific student or all students</div>
+        <div id="retakeMsg"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+          <div class="form-group" style="flex:1;min-width:180px;margin-bottom:0;">
+            <label>Exam</label>
+            <select id="retakeExam"></select>
+          </div>
+          <div class="form-group" style="flex:1;min-width:220px;margin-bottom:0;">
+            <label>Student / Everyone</label>
+            <select id="retakeTarget"><option value="ALL">All Students (Everyone)</option></select>
+          </div>
+          <button class="btn btn-primary" id="grantRetakeBtn" onclick="grantRetake()">Open Retake (1x)</button>
+        </div>
+      </div>
       <div class="refresh-row">
         <div style="font-weight:600;">Quiz Submissions</div>
         <div style="display:flex;gap:8px;align-items:center;">
@@ -674,6 +690,7 @@ async function fetchAndMergeRoster() {
       });
       if (document.getElementById('page-admin').classList.contains('active')) {
         populateStudentDropdown();
+        populateRetakeDropdowns();
         if (document.getElementById('tab-gradebook').classList.contains('active') && gradeBookData) {
           renderGradeBook();
         }
@@ -763,6 +780,53 @@ function renderExams(){
   }).join('');
 }
 
+function syncServerRetakes(data){
+  if(!currentStudent || !data) return;
+  const subsByTitle = data.submissionsByTitle || {};
+  const grants = data.retakeGrants || {};
+  const subKey = 'submitted_' + currentStudent.id;
+  let done = [];
+  try{ done = JSON.parse(localStorage.getItem(subKey) || '[]'); }catch(e){ done = []; }
+  let changed = false;
+
+  (CONFIG.exams || []).forEach(exam => {
+    const lastSubMs = Number(subsByTitle[exam.label] || 0);
+    const grantedMs = Number(grants[exam.id] || 0);
+    const usedMs = Number(localStorage.getItem(`retake_used_${currentStudent.id}_${exam.id}`) || 0);
+
+    if(grantedMs > lastSubMs && grantedMs > usedMs){
+      // Retake granted and not yet consumed
+      if(done.includes(exam.id)){
+        done = done.filter(id => id !== exam.id);
+        changed = true;
+      }
+      // Clear any stale timer/answers from before the retake was granted
+      try{
+        const qKey = getExamStateKey(exam.id);
+        const rawQ = localStorage.getItem(qKey);
+        if(rawQ){
+          const parsedQ = JSON.parse(rawQ);
+          if(parsedQ && parsedQ.startTime && parsedQ.startTime < grantedMs){
+            localStorage.removeItem(qKey);
+          }
+        }
+        localStorage.setItem(`active_retake_${currentStudent.id}_${exam.id}`, String(grantedMs));
+      }catch(e){}
+    } else if(lastSubMs > 0 && grantedMs <= lastSubMs){
+      // Already submitted on server with no newer retake grant
+      if(!done.includes(exam.id)){
+        done.push(exam.id);
+        changed = true;
+      }
+    }
+  });
+
+  if(changed){
+    try{ localStorage.setItem(subKey, JSON.stringify(done)); }catch(e){}
+  }
+  renderExams();
+}
+
 async function loadGrades(){
   const wrap = document.getElementById('resultsSection');
   wrap.innerHTML = '<div class="loading-wrap"><div class="spinner"></div>Loading grades...</div>';
@@ -770,6 +834,7 @@ async function loadGrades(){
   try{
     const res = await fetch(`${CONFIG.appsScriptUrl}?action=getGrades&studentId=${encodeURIComponent(currentStudent.id)}&key=${encodeURIComponent(CONFIG.adminPassword)}`);
     const data = await res.json();
+    syncServerRetakes(data);
     if(data.error && data.grades === undefined){
       wrap.innerHTML = '<div style="color:var(--text-muted);font-size:14px;padding:8px 0;">No grades recorded yet.</div>';
       return;
@@ -1015,7 +1080,15 @@ async function submitQuiz(autoSubmit=false){
 
   // Mark as submitted locally and clear active exam state
   if(currentExam){
-    try{ localStorage.removeItem(getExamStateKey(currentExam.id)); }catch(e){}
+    try{
+      localStorage.removeItem(getExamStateKey(currentExam.id));
+      const activeKey = `active_retake_${currentStudent.id}_${currentExam.id}`;
+      const activeGrant = localStorage.getItem(activeKey);
+      if(activeGrant){
+        localStorage.setItem(`retake_used_${currentStudent.id}_${currentExam.id}`, activeGrant);
+        localStorage.removeItem(activeKey);
+      }
+    }catch(e){}
     const key='submitted_'+currentStudent.id;
     const done=JSON.parse(localStorage.getItem(key)||'[]');
     if(!done.includes(currentExam.id)){done.push(currentExam.id);localStorage.setItem(key,JSON.stringify(done));}
@@ -1106,6 +1179,7 @@ function enterAdminPanel(){
   document.getElementById('headerBadge').textContent='Admin';
   populateAssessmentsDropdown();
   populateStudentDropdown();
+  populateRetakeDropdowns();
   loadSubmissions();
   loadStudentList();
   startAutoRefresh();
@@ -1115,6 +1189,65 @@ function enterAdminPanel(){
       switchAdminTab(savedTab);
     }
   }catch(e){}
+}
+function populateRetakeDropdowns(){
+  const examSel = document.getElementById('retakeExam');
+  const targetSel = document.getElementById('retakeTarget');
+  if(examSel){
+    const prevExam = examSel.value;
+    examSel.innerHTML = '';
+    (CONFIG.exams || []).forEach(ex => {
+      examSel.innerHTML += `<option value="${ex.id}">${ex.label}</option>`;
+    });
+    if(prevExam) examSel.value = prevExam;
+  }
+  if(targetSel){
+    const prevTarget = targetSel.value || 'ALL';
+    targetSel.innerHTML = '<option value="ALL">All Students (Everyone)</option>';
+    ACTIVE_ROSTER.forEach(s => {
+      targetSel.innerHTML += `<option value="${s.id}">${s.id} — ${s.name}</option>`;
+    });
+    targetSel.value = prevTarget;
+  }
+}
+async function grantRetake(){
+  const examId = document.getElementById('retakeExam').value;
+  const target = document.getElementById('retakeTarget').value;
+  const msgEl  = document.getElementById('retakeMsg');
+  const btn    = document.getElementById('grantRetakeBtn');
+  msgEl.innerHTML = '';
+  if(!examId || !target){
+    msgEl.innerHTML = '<div class="alert alert-error">Select an exam and target first.</div>';
+    return;
+  }
+  const examObj = (CONFIG.exams || []).find(e => e.id === examId);
+  const examLabel = examObj ? examObj.label : examId;
+  const targetLabel = target === 'ALL' ? 'All Students' : (ACTIVE_ROSTER.find(s => s.id === target)?.name || target);
+  btn.disabled = true;
+  btn.textContent = 'Opening...';
+  try{
+    const res = await fetch(CONFIG.appsScriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'grantRetake',
+        target,
+        examId,
+        examLabel,
+        adminKey: CONFIG.adminPassword,
+      })
+    });
+    const data = await res.json();
+    if(data.ok){
+      msgEl.innerHTML = `<div class="alert alert-success">Retake opened (1x) for <strong>${targetLabel}</strong> on <strong>${examLabel}</strong>.</div>`;
+      toast(`Retake opened for ${targetLabel}.`);
+    } else {
+      msgEl.innerHTML = `<div class="alert alert-error">${data.error || 'Failed to open retake.'}</div>`;
+    }
+  }catch(e){
+    msgEl.innerHTML = '<div class="alert alert-error">Connection failed.</div>';
+  }
+  btn.disabled = false;
+  btn.textContent = 'Open Retake (1x)';
 }
 function checkAdminLogin(){
   const pwd=document.getElementById('adminPwd').value;

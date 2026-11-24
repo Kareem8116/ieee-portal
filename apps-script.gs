@@ -140,6 +140,7 @@ function doPost(e) {
   if (action === 'setGrade')      return jsonOut(setGrade(body));
   if (action === 'addStudent')    return jsonOut(addStudent(body));
   if (action === 'deleteStudent') return jsonOut(deleteStudent(body));
+  if (action === 'grantRetake')   return jsonOut(grantRetake(body));
 
   return jsonOut({ error: 'Unknown action' });
 }
@@ -231,8 +232,13 @@ function getStudents() {
 //  Note: We use adminKey for validation but allow student
 //        to access their own grades via portal with just ID
 // ───────────────────────────────────────────────────────────
+function normalizeStudentId(id) {
+  return String(id || '').trim().replace(/^0+/, '') || '0';
+}
+
 function getStudentGrades(studentId) {
   if (!studentId) return { error: 'Student ID required' };
+  const normId = normalizeStudentId(studentId);
 
   // Look up student name
   const studentsSheet = getSheet('Students');
@@ -240,20 +246,26 @@ function getStudentGrades(studentId) {
   if (studentsSheet) {
     const data = studentsSheet.getDataRange().getValues();
     const h    = getHeaders(studentsSheet);
-    const row  = data.slice(1).find(r => String(r[h['ID']]).trim() === String(studentId).trim());
+    const row  = data.slice(1).find(r => normalizeStudentId(r[h['ID']]) === normId);
     if (row) studentName = String(row[h['Name']] || '');
   }
 
-  // Also check Submissions for auto-submitted quiz scores
+  // Also check Submissions for auto-submitted quiz scores and latest submission timestamps
   const subsSheet = getSheet('Submissions');
   const quizGrades = [];
+  const submissionsByTitle = {};
   if (subsSheet && subsSheet.getLastRow() > 1) {
     const data = subsSheet.getDataRange().getValues();
     const h    = getHeaders(subsSheet);
     data.slice(1).forEach(row => {
-      if (String(row[h['Student ID']]).trim() === String(studentId).trim()) {
+      if (normalizeStudentId(row[h['Student ID']]) === normId) {
+        const title = String(row[h['Quiz Title']] || 'Quiz').trim();
+        const subMs = row[h['Submitted At']] ? new Date(row[h['Submitted At']]).getTime() : 0;
+        if (!submissionsByTitle[title] || subMs > submissionsByTitle[title]) {
+          submissionsByTitle[title] = subMs;
+        }
         quizGrades.push({
-          assessment: String(row[h['Quiz Title']] || 'Quiz'),
+          assessment: title,
           grade:      row[h['Score']],
           maxGrade:   row[h['Max Grade']],
           date:       row[h['Submitted At']] ? new Date(row[h['Submitted At']]).toLocaleDateString('en-GB') : '',
@@ -270,7 +282,7 @@ function getStudentGrades(studentId) {
     const data = gradesSheet.getDataRange().getValues();
     const h    = getHeaders(gradesSheet);
     data.slice(1).forEach(row => {
-      if (String(row[h['Student ID']]).trim() === String(studentId).trim()) {
+      if (normalizeStudentId(row[h['Student ID']]) === normId) {
         manualGrades.push({
           assessment: String(row[h['Assessment']] || ''),
           grade:      row[h['Grade']],
@@ -282,6 +294,25 @@ function getStudentGrades(studentId) {
     });
   }
 
+  // Retake grants (max of ALL and specific studentId per examId)
+  const retakeGrants = {};
+  const retakesSheet = getSheet('Retakes');
+  if (retakesSheet && retakesSheet.getLastRow() > 1) {
+    const data = retakesSheet.getDataRange().getValues();
+    const h    = getHeaders(retakesSheet);
+    data.slice(1).forEach(row => {
+      const target = String(row[h['Target']] || '').trim();
+      const examId = String(row[h['Exam ID']] || '').trim();
+      const grantedAt = Number(row[h['Granted At']] || 0);
+      if (!examId || !grantedAt) return;
+      if (target === 'ALL' || normalizeStudentId(target) === normId) {
+        if (!retakeGrants[examId] || grantedAt > retakeGrants[examId]) {
+          retakeGrants[examId] = grantedAt;
+        }
+      }
+    });
+  }
+
   if (!studentName && quizGrades.length === 0 && manualGrades.length === 0) {
     return { error: 'لم يتم العثور على هذا الرقم. تحقق من رقمك الجامعي.' };
   }
@@ -289,6 +320,8 @@ function getStudentGrades(studentId) {
   return {
     student: { id: studentId, name: studentName || 'Student' },
     grades:  [...quizGrades, ...manualGrades],
+    submissionsByTitle,
+    retakeGrants,
   };
 }
 
@@ -459,6 +492,57 @@ function addStudent(body) {
   try {
     sheet.appendRow([studentId, name, email || '']);
     return { ok: true };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ───────────────────────────────────────────────────────────
+//  WRITE: Grant 1x retake for ALL or a specific student (admin)
+// ───────────────────────────────────────────────────────────
+function getOrCreateRetakesSheet() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sheet = ss.getSheetByName('Retakes');
+  if (!sheet) {
+    sheet = ss.insertSheet('Retakes');
+    sheet.appendRow(['Target', 'Exam ID', 'Exam Label', 'Granted At', 'Updated At']);
+    sheet.getRange(1, 1, 1, 5).setFontWeight('bold')
+      .setBackground('#003865').setFontColor('#ffffff');
+  }
+  return sheet;
+}
+
+function grantRetake(body) {
+  const target    = String(body.target || '').trim();
+  const examId    = String(body.examId || '').trim();
+  const examLabel = String(body.examLabel || '').trim();
+  if (!target || !examId) return { error: 'Target and Exam are required.' };
+
+  const sheet = getOrCreateRetakesSheet();
+  const lock = LockService.getScriptLock();
+  try { lock.waitLock(10000); } catch(e) { return { error: 'Server busy.' }; }
+
+  try {
+    const grantedAt = Date.now();
+    const now = new Date();
+    if (sheet.getLastRow() > 1) {
+      const data = sheet.getDataRange().getValues();
+      const h    = getHeaders(sheet);
+      const normTarget = target === 'ALL' ? 'ALL' : normalizeStudentId(target);
+      for (let i = 1; i < data.length; i++) {
+        const rowTarget = String(data[i][h['Target']] || '').trim();
+        const normRowTarget = rowTarget === 'ALL' ? 'ALL' : normalizeStudentId(rowTarget);
+        const rowExam = String(data[i][h['Exam ID']] || '').trim();
+        if (normRowTarget === normTarget && rowExam === examId) {
+          sheet.getRange(i + 1, h['Exam Label'] + 1).setValue(examLabel);
+          sheet.getRange(i + 1, h['Granted At'] + 1).setValue(grantedAt);
+          sheet.getRange(i + 1, h['Updated At'] + 1).setValue(now);
+          return { ok: true, grantedAt };
+        }
+      }
+    }
+    sheet.appendRow([target, examId, examLabel, grantedAt, now]);
+    return { ok: true, grantedAt };
   } finally {
     lock.releaseLock();
   }
