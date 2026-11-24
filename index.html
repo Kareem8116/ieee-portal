@@ -654,6 +654,26 @@ function toast(msg,dur=3000){
   setTimeout(()=>t.classList.remove('show'),dur);
 }
 
+// Merged roster: starts with hardcoded list, extended from Sheet on load
+let ACTIVE_ROSTER = [...STUDENT_ROSTER];
+
+async function fetchAndMergeRoster() {
+  try {
+    const res = await fetch(`${CONFIG.appsScriptUrl}?action=getStudents&key=${encodeURIComponent(CONFIG.adminPassword)}`);
+    const data = await res.json();
+    if (data.students && data.students.length > 0) {
+      data.students.forEach(s => {
+        if (!ACTIVE_ROSTER.find(r => r.id === s.id)) {
+          ACTIVE_ROSTER.push({ id: s.id, name: s.name });
+        }
+      });
+    }
+  } catch(e) { /* fail silently — hardcoded roster still works */ }
+}
+
+// Load roster on page start
+fetchAndMergeRoster();
+
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    LOGIN
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
@@ -667,7 +687,7 @@ function loginWithId(){
     return;
   }
 
-  const student = STUDENT_ROSTER.find(s => s.id === id);
+  const student = ACTIVE_ROSTER.find(s => s.id === id);
   if(!student){
     errEl.innerHTML='<div class="alert alert-error">Invalid ID. Please check your Student ID and try again.</div>';
     return;
@@ -1042,7 +1062,7 @@ function populateAssessmentsDropdown(){
 function populateStudentDropdown(){
   const sel=document.getElementById('gradeStudent');
   sel.innerHTML='<option value="">— Select Student —</option>';
-  STUDENT_ROSTER.forEach(s=>{sel.innerHTML+=`<option value="${s.id}">${s.id} — ${s.name}</option>`;});
+  ACTIVE_ROSTER.forEach(s=>{sel.innerHTML+=`<option value="${s.id}">${s.id} — ${s.name}</option>`;});
 }
 async function saveGrade(){
   const studentId=document.getElementById('gradeStudent').value;
@@ -1156,7 +1176,7 @@ function renderGradeBook(){
   });
 
   // Also include students with no grades
-  STUDENT_ROSTER.forEach(s=>{
+  ACTIVE_ROSTER.forEach(s=>{
     if(!studentMap[s.id]) studentMap[s.id]={name:s.name, grades:{}};
     if(!studentMap[s.id].name) studentMap[s.id].name=s.name;
   });
