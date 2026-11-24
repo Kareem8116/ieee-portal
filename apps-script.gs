@@ -320,12 +320,8 @@ function setGrade(body) {
     if (row) studentName = String(row[h['Name']] || '');
   }
 
-  // Find max grade from assessment config embedded in script
-  const ASSESSMENTS = {
-    'week1-quiz': 30, 'midterm': 25, 'week2-quiz': 25,
-    'task1': 10, 'task2': 10, 'task3': 10, 'final': 50,
-  };
-  const maxGrade = ASSESSMENTS[assessment] || '';
+  // Max grade now comes from the request body (flexible)
+  const maxGrade = body.maxGrade !== undefined ? body.maxGrade : '';
 
   const sheet = getSheet('Grades');
   if (!sheet) return { error: 'Grades sheet not found. Run setupSheets() first.' };

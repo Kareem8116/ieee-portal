@@ -431,7 +431,11 @@ textarea{resize:vertical;min-height:70px;}
         </div>
         <div class="form-group">
           <label>Grade</label>
-          <input type="number" id="gradeValue" placeholder="0" min="0"/>
+          <input type="number" id="gradeValue" placeholder="e.g. 18" min="0"/>
+        </div>
+        <div class="form-group">
+          <label>Max Grade</label>
+          <input type="number" id="gradeMax" placeholder="e.g. 20" min="0"/>
         </div>
         <div class="form-group">
           <label>Notes (optional)</label>
@@ -481,13 +485,30 @@ const CONFIG = {
   globalShowAfterExam: false, // default for questions that don't set their own flag
 
   assessments: [
-    { id: 'week1-quiz',  label: 'Week 1 Quiz',  max: 30 },
-    { id: 'midterm',     label: 'Midterm',       max: 25 },
-    { id: 'week2-quiz',  label: 'Week 2 Quiz',   max: 25 },
-    { id: 'task1',       label: 'Task 1',        max: 10 },
-    { id: 'task2',       label: 'Task 2',        max: 10 },
-    { id: 'task3',       label: 'Task 3',        max: 10 },
-    { id: 'final',       label: 'Final Exam',    max: 50 },
+    { id: 'week1-quiz', label: 'Week 1 Quiz' },
+    { id: 'midterm',    label: 'Midterm' },
+    { id: 'week2-quiz', label: 'Week 2 Quiz' },
+    { id: 'task1',      label: 'Task 1' },
+    { id: 'task2',      label: 'Task 2' },
+    { id: 'task3',      label: 'Task 3' },
+    { id: 'task4',      label: 'Task 4' },
+    { id: 'task5',      label: 'Task 5' },
+    { id: 'task6',      label: 'Task 6' },
+    { id: 'task7',      label: 'Task 7' },
+    { id: 'task8',      label: 'Task 8' },
+    { id: 'task9',      label: 'Task 9' },
+    { id: 'task10',     label: 'Task 10' },
+    { id: 'task11',     label: 'Task 11' },
+    { id: 'task12',     label: 'Task 12' },
+    { id: 'task13',     label: 'Task 13' },
+    { id: 'task14',     label: 'Task 14' },
+    { id: 'task15',     label: 'Task 15' },
+    { id: 'task16',     label: 'Task 16' },
+    { id: 'task17',     label: 'Task 17' },
+    { id: 'task18',     label: 'Task 18' },
+    { id: 'task19',     label: 'Task 19' },
+    { id: 'task20',     label: 'Task 20' },
+    { id: 'final',      label: 'Final Exam' },
   ],
 
   // Available exams shown in dashboard
@@ -997,8 +1018,7 @@ function switchAdminTab(id){
 function populateAssessmentsDropdown(){
   const sel=document.getElementById('gradeAssessment');
   sel.innerHTML='<option value="">— Select Assessment —</option>';
-  CONFIG.assessments.forEach(a=>{sel.innerHTML+=`<option value="${a.id}" data-max="${a.max}">${a.label} (max: ${a.max})</option>`;});
-  sel.addEventListener('change',()=>{const o=sel.selectedOptions[0];if(o&&o.dataset.max){document.getElementById('gradeValue').max=o.dataset.max;document.getElementById('gradeValue').placeholder='0 – '+o.dataset.max;}});
+  CONFIG.assessments.forEach(a=>{sel.innerHTML+=`<option value="${a.id}">${a.label}</option>`;});
 }
 function populateStudentDropdown(){
   const sel=document.getElementById('gradeStudent');
@@ -1009,15 +1029,16 @@ async function saveGrade(){
   const studentId=document.getElementById('gradeStudent').value;
   const assessment=document.getElementById('gradeAssessment').value;
   const grade=document.getElementById('gradeValue').value;
+  const maxGrade=document.getElementById('gradeMax').value;
   const notes=document.getElementById('gradeNotes').value.trim();
   const msgEl=document.getElementById('gradeEntryMsg');
   msgEl.innerHTML='';
-  if(!studentId||!assessment||grade===''){msgEl.innerHTML='<div class="alert alert-error">Please fill Student, Assessment and Grade.</div>';return;}
+  if(!studentId||!assessment||grade===''||maxGrade===''){msgEl.innerHTML='<div class="alert alert-error">Please fill Student, Assessment, Grade and Max Grade.</div>';return;}
   const btn=document.getElementById('saveGradeBtn');btn.disabled=true;btn.textContent='Saving...';
   try{
-    const res=await fetch(CONFIG.appsScriptUrl,{method:'POST',body:JSON.stringify({action:'setGrade',studentId,assessment,grade:Number(grade),notes,adminKey:CONFIG.adminPassword})});
+    const res=await fetch(CONFIG.appsScriptUrl,{method:'POST',body:JSON.stringify({action:'setGrade',studentId,assessment,grade:Number(grade),maxGrade:Number(maxGrade),notes,adminKey:CONFIG.adminPassword})});
     const data=await res.json();
-    if(data.ok){msgEl.innerHTML='<div class="alert alert-success">Grade saved successfully.</div>';document.getElementById('gradeValue').value='';document.getElementById('gradeNotes').value='';}
+    if(data.ok){msgEl.innerHTML='<div class="alert alert-success">Grade saved successfully.</div>';document.getElementById('gradeValue').value='';document.getElementById('gradeMax').value='';document.getElementById('gradeNotes').value='';}
     else{msgEl.innerHTML=`<div class="alert alert-error">${data.error||'Unknown error.'}</div>`;}
   }catch(e){msgEl.innerHTML='<div class="alert alert-error">Connection failed.</div>';}
   btn.disabled=false;btn.textContent='Save Grade';
