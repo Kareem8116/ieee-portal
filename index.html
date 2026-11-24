@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>IEEE KSB — Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════════════════
+   DESIGN TOKENS — IEEE KSB
+═══════════════════════════════════════════════ */
+:root{
+  --ieee-dark:#003865;
+  --ieee-blue:#00629B;
+  --ieee-accent:#0096D6;
+  --ieee-light:#E8F4FD;
+  --ieee-gold:#F5A800;
+  --success:#16a34a;
+  --danger:#dc2626;
+  --warn:#d97706;
+  --bg:#f0f4f8;
+  --card:#ffffff;
+  --text:#1e293b;
+  --text-muted:#64748b;
+  --border:#e2e8f0;
+  --radius:12px;
+  --shadow:0 4px 24px rgba(0,0,0,.10);
+  --header-h:72px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html{font-size:16px;}
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ═══════════════════════════════════════════════
+   HEADER — not sticky, scrolls with page
+═══════════════════════════════════════════════ */
+.site-header{
+  background:linear-gradient(135deg,var(--ieee-dark) 0%,var(--ieee-blue) 50%,var(--ieee-accent) 100%);
+  color:#fff;
+  padding:16px 20px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.header-brand{display:flex;align-items:center;gap:12px;}
+.header-logo{
+  width:44px;height:44px;
+  background:#fff;
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:13px;color:var(--ieee-dark);
+  letter-spacing:-.5px;flex-shrink:0;
+}
+.header-title{font-size:clamp(14px,3.5vw,18px);font-weight:700;line-height:1.2;}
+.header-sub{font-size:11px;opacity:.8;margin-top:2px;}
+.header-badge{
+  background:rgba(255,255,255,.18);
+  border:1px solid rgba(255,255,255,.3);
+  border-radius:20px;
+  padding:5px 12px;
+  font-size:12px;font-weight:600;
+  white-space:nowrap;flex-shrink:0;
+}
+
+/* ═══════════════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════════════ */
+.page{display:none;padding:24px 16px 60px;}
+.page.active{display:block;}
+.container{max-width:760px;margin:0 auto;}
+
+/* ═══════════════════════════════════════════════
+   CARDS
+═══════════════════════════════════════════════ */
+.card{
+  background:var(--card);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:28px 24px;
+  margin-bottom:20px;
+}
+.card-title{
+  font-size:18px;font-weight:700;
+  color:var(--ieee-dark);
+  margin-bottom:4px;
+}
+.card-sub{font-size:13px;color:var(--text-muted);margin-bottom:20px;}
+.divider{border:none;border-top:1px solid var(--border);margin:16px 0;}
+
+/* ═══════════════════════════════════════════════
+   LANDING — choose mode
+═══════════════════════════════════════════════ */
+.landing-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  margin-top:16px;
+}
+@media(max-width:460px){.landing-grid{grid-template-columns:1fr;}}
+.mode-btn{
+  background:var(--card);
+  border:2px solid var(--border);
+  border-radius:var(--radius);
+  padding:28px 16px;
+  cursor:pointer;
+  text-align:center;
+  transition:all .2s;
+  box-shadow:var(--shadow);
+}
+.mode-btn:hover,.mode-btn:focus-visible{
+  border-color:var(--ieee-accent);
+  transform:translateY(-2px);
+  box-shadow:0 8px 32px rgba(0,98,155,.18);
+}
+.mode-btn .icon{font-size:36px;margin-bottom:10px;}
+.mode-btn .label{font-size:15px;font-weight:700;color:var(--ieee-dark);}
+.mode-btn .desc{font-size:12px;color:var(--text-muted);margin-top:4px;}
+
+/* ═══════════════════════════════════════════════
+   FORM ELEMENTS
+═══════════════════════════════════════════════ */
+.form-group{margin-bottom:16px;}
+label{display:block;font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;}
+input,select,textarea{
+  width:100%;
+  padding:11px 14px;
+  border:1.5px solid var(--border);
+  border-radius:8px;
+  font-size:15px;
+  font-family:inherit;
+  color:var(--text);
+  background:#fff;
+  transition:border-color .2s;
+  outline:none;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--ieee-accent);}
+textarea{resize:vertical;min-height:70px;}
+
+/* ═══════════════════════════════════════════════
+   BUTTONS
+═══════════════════════════════════════════════ */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  padding:11px 22px;
+  border:none;border-radius:8px;
+  font-size:14px;font-weight:600;font-family:inherit;
+  cursor:pointer;transition:all .18s;
+  white-space:nowrap;
+}
+.btn-primary{background:linear-gradient(135deg,var(--ieee-blue),var(--ieee-accent));color:#fff;}
+.btn-primary:hover{filter:brightness(1.08);transform:translateY(-1px);}
+.btn-success{background:var(--success);color:#fff;}
+.btn-success:hover{filter:brightness(1.1);}
+.btn-danger{background:var(--danger);color:#fff;}
+.btn-outline{background:transparent;border:1.5px solid var(--ieee-accent);color:var(--ieee-accent);}
+.btn-outline:hover{background:var(--ieee-light);}
+.btn-sm{padding:7px 14px;font-size:13px;}
+.btn-full{width:100%;}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important;}
+
+/* ═══════════════════════════════════════════════
+   ALERTS / TOAST
+═══════════════════════════════════════════════ */
+.alert{padding:12px 16px;border-radius:8px;font-size:13px;font-weight:500;margin-bottom:14px;}
+.alert-error{background:#fef2f2;border:1px solid #fecaca;color:var(--danger);}
+.alert-success{background:#f0fdf4;border:1px solid #bbf7d0;color:var(--success);}
+.alert-info{background:var(--ieee-light);border:1px solid #bae6fd;color:var(--ieee-dark);}
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  background:var(--ieee-dark);color:#fff;
+  padding:12px 24px;border-radius:50px;
+  font-size:14px;font-weight:600;
+  z-index:9999;
+  opacity:0;pointer-events:none;
+  transition:opacity .3s;
+  box-shadow:0 8px 32px rgba(0,0,0,.3);
+}
+.toast.show{opacity:1;}
+
+/* ═══════════════════════════════════════════════
+   QUIZ MODE
+═══════════════════════════════════════════════ */
+.quiz-info-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:10px;
+  background:var(--ieee-dark);color:#fff;
+  padding:10px 16px;
+  font-size:13px;font-weight:600;
+}
+.timer-badge{
+  background:rgba(255,255,255,.15);
+  border:1px solid rgba(255,255,255,.3);
+  border-radius:20px;padding:5px 14px;
+  font-size:14px;font-weight:700;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:.5px;
+}
+.timer-badge.warn{background:rgba(220,38,38,.3);border-color:#fca5a5;animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.6;}}
+
+/* Progress */
+.progress-wrap{background:var(--border);border-radius:4px;height:5px;margin-bottom:20px;}
+.progress-bar{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--ieee-blue),var(--ieee-accent));transition:width .4s;}
+
+/* Question card */
+.q-card{
+  background:var(--card);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:22px 20px;
+  margin-bottom:14px;
+  border-left:4px solid var(--ieee-accent);
+}
+.q-num{font-size:11px;font-weight:700;color:var(--ieee-accent);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;}
+.q-text{font-size:15px;font-weight:600;line-height:1.6;margin-bottom:16px;color:var(--text);}
+
+/* Options */
+.options{display:flex;flex-direction:column;gap:9px;}
+.option{
+  display:flex;align-items:center;gap:12px;
+  padding:11px 14px;
+  border:1.5px solid var(--border);
+  border-radius:9px;
+  cursor:pointer;
+  transition:all .15s;
+  font-size:14px;
+}
+.option:hover{border-color:var(--ieee-accent);background:var(--ieee-light);}
+.option.selected{border-color:var(--ieee-blue);background:var(--ieee-light);}
+.option.correct{border-color:var(--success);background:#f0fdf4;}
+.option.wrong{border-color:var(--danger);background:#fef2f2;}
+.opt-letter{
+  width:30px;height:30px;
+  border-radius:50%;
+  background:var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:13px;
+  flex-shrink:0;
+  transition:background .15s,color .15s;
+}
+.option.selected .opt-letter{background:var(--ieee-blue);color:#fff;}
+.option.correct .opt-letter{background:var(--success);color:#fff;}
+.option.wrong .opt-letter{background:var(--danger);color:#fff;}
+
+/* T/F */
+.tf-options{display:flex;gap:12px;}
+.tf-btn{
+  flex:1;padding:14px;border:2px solid var(--border);
+  border-radius:9px;text-align:center;cursor:pointer;
+  font-size:15px;font-weight:700;transition:all .15s;
+}
+.tf-btn:hover{border-color:var(--ieee-accent);background:var(--ieee-light);}
+.tf-btn.selected{border-color:var(--ieee-blue);background:var(--ieee-light);color:var(--ieee-blue);}
+.tf-btn.correct{border-color:var(--success);background:#f0fdf4;color:var(--success);}
+.tf-btn.wrong{border-color:var(--danger);background:#fef2f2;color:var(--danger);}
+
+/* Review explanation */
+.q-explanation{
+  margin-top:12px;
+  padding:10px 14px;
+  background:var(--ieee-light);
+  border-radius:8px;
+  font-size:13px;
+  color:var(--ieee-dark);
+  border-left:3px solid var(--ieee-accent);
+  display:none;
+}
+.q-explanation.show{display:block;}
+
+/* ═══════════════════════════════════════════════
+   RESULT / REVIEW
+═══════════════════════════════════════════════ */
+.result-hero{
+  text-align:center;
+  padding:32px 20px;
+  background:linear-gradient(135deg,var(--ieee-dark) 0%,var(--ieee-blue) 100%);
+  border-radius:var(--radius);
+  color:#fff;
+  margin-bottom:20px;
+  box-shadow:var(--shadow);
+}
+.result-score{font-size:clamp(44px,12vw,72px);font-weight:800;line-height:1;}
+.result-label{font-size:14px;opacity:.85;margin-top:6px;}
+.result-meta{display:flex;justify-content:center;gap:24px;margin-top:18px;flex-wrap:wrap;}
+.result-stat{text-align:center;}
+.result-stat .val{font-size:22px;font-weight:800;}
+.result-stat .key{font-size:11px;opacity:.7;margin-top:2px;}
+
+/* Grade indicator */
+.grade-pill{
+  display:inline-block;
+  padding:3px 10px;border-radius:12px;
+  font-size:12px;font-weight:700;
+}
+.grade-A{background:#dcfce7;color:#15803d;}
+.grade-B{background:#dbeafe;color:#1d4ed8;}
+.grade-C{background:#fef9c3;color:#a16207;}
+.grade-D,.grade-F{background:#fee2e2;color:#b91c1c;}
+
+/* ═══════════════════════════════════════════════
+   GRADES TABLE (student portal)
+═══════════════════════════════════════════════ */
+.grades-table{width:100%;border-collapse:collapse;font-size:14px;}
+.grades-table th{
+  background:var(--ieee-dark);color:#fff;
+  padding:10px 14px;text-align:left;font-size:12px;font-weight:600;
+}
+.grades-table td{padding:10px 14px;border-bottom:1px solid var(--border);}
+.grades-table tr:hover td{background:var(--ieee-light);}
+.grades-table .no-data{text-align:center;color:var(--text-muted);padding:28px;}
+
+/* ═══════════════════════════════════════════════
+   ADMIN DASHBOARD
+═══════════════════════════════════════════════ */
+.admin-nav{
+  display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;
+}
+.admin-tab{
+  padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;
+  cursor:pointer;border:1.5px solid var(--border);
+  background:var(--card);color:var(--text-muted);
+  transition:all .15s;
+}
+.admin-tab.active{background:var(--ieee-blue);color:#fff;border-color:var(--ieee-blue);}
+.admin-panel{display:none;}
+.admin-panel.active{display:block;}
+
+/* Submissions table */
+.subs-table{width:100%;border-collapse:collapse;font-size:13px;}
+.subs-table th{
+  background:var(--ieee-dark);color:#fff;
+  padding:9px 12px;text-align:left;font-size:11px;font-weight:600;
+}
+.subs-table td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.subs-table tr:hover td{background:var(--ieee-light);}
+.table-wrap{overflow-x:auto;border-radius:var(--radius);box-shadow:var(--shadow);}
+.refresh-row{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:10px;margin-bottom:12px;
+}
+
+/* ═══════════════════════════════════════════════
+   ANTI-CHEAT OVERLAY
+═══════════════════════════════════════════════ */
+.ac-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.97);
+  z-index:9000;
+  align-items:center;justify-content:center;
+  flex-direction:column;text-align:center;padding:32px;
+}
+.ac-overlay.show{display:flex;}
+.ac-icon{font-size:64px;margin-bottom:16px;}
+.ac-title{font-size:22px;font-weight:800;color:#fff;margin-bottom:8px;}
+.ac-msg{font-size:14px;color:#94a3b8;line-height:1.6;max-width:400px;}
+.ac-count{
+  margin-top:20px;
+  font-size:40px;font-weight:800;
+  color:#ef4444;
+}
+
+/* ═══════════════════════════════════════════════
+   LOADING SPINNER
+═══════════════════════════════════════════════ */
+.spinner{
+  width:36px;height:36px;
+  border:3px solid var(--border);
+  border-top-color:var(--ieee-accent);
+  border-radius:50%;
+  animation:spin .7s linear infinite;
+  margin:20px auto;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-wrap{text-align:center;padding:32px;color:var(--text-muted);}
+
+/* ═══════════════════════════════════════════════
+   PROFILE HEADER (student portal)
+═══════════════════════════════════════════════ */
+.profile-header{
+  display:flex;align-items:center;gap:14px;
+  background:linear-gradient(135deg,var(--ieee-dark),var(--ieee-blue));
+  border-radius:var(--radius);
+  padding:20px;color:#fff;margin-bottom:20px;
+  box-shadow:var(--shadow);
+}
+.profile-avatar{
+  width:52px;height:52px;border-radius:50%;
+  background:rgba(255,255,255,.2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;font-weight:800;flex-shrink:0;
+}
+.profile-name{font-size:17px;font-weight:700;}
+.profile-id{font-size:12px;opacity:.75;margin-top:3px;}
+
+/* ═══════════════════════════════════════════════
+   UNANSWERED WARNING
+═══════════════════════════════════════════════ */
+.unanswered-list{
+  display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;
+}
+.unanswered-pill{
+  padding:4px 10px;border-radius:12px;
+  background:#fef2f2;border:1px solid #fecaca;
+  color:var(--danger);font-size:12px;font-weight:700;
+  cursor:pointer;
+}
+.unanswered-pill:hover{background:#fee2e2;}
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════ */
+@media(max-width:600px){
+  .card{padding:20px 16px;}
+  .q-card{padding:16px 14px;}
+  .page{padding:16px 12px 60px;}
+  .quiz-info-bar{font-size:12px;}
+}
+</style>
+</head>
+<body>
+
+<!-- SITE HEADER -->
+<header class="site-header">
+  <div class="header-brand">
+    <div class="header-logo">IEEE</div>
+    <div>
+      <div class="header-title">IEEE KSB Student Portal</div>
+      <div class="header-sub">Kuwait Student Branch</div>
+    </div>
+  </div>
+  <div class="header-badge" id="headerBadge">Portal</div>
+</header>
+
+<!-- ANTI-CHEAT OVERLAY -->
+<div class="ac-overlay" id="acOverlay">
+  <div class="ac-icon">⚠️</div>
+  <div class="ac-title">تحذير! خرجت من الامتحان</div>
+  <div class="ac-msg">تم رصد مغادرتك للصفحة أثناء الامتحان. سيتم تسجيل هذا.</div>
+  <div class="ac-count" id="acCount">3</div>
+  <div style="color:#94a3b8;font-size:13px;margin-top:8px;">ثواني لإعادة التنشيط</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ══════════════════════════════════════════════
+     PAGE: LANDING
+══════════════════════════════════════════════ -->
+<div class="page active" id="page-landing">
+  <div class="container">
+    <div class="card">
+      <div class="card-title">مرحباً بك 👋</div>
+      <div class="card-sub">اختر ما تريد القيام به</div>
+      <div class="landing-grid">
+        <button class="mode-btn" onclick="goQuiz()">
+          <div class="icon">📝</div>
+          <div class="label">ابدأ الكويز</div>
+          <div class="desc">أجب على الأسئلة وأرسل إجاباتك</div>
+        </button>
+        <button class="mode-btn" onclick="goPortal()">
+          <div class="icon">📊</div>
+          <div class="label">درجاتي</div>
+          <div class="desc">تسجيل الدخول لرؤية نتائجك</div>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PAGE: QUIZ LOGIN
+══════════════════════════════════════════════ -->
+<div class="page" id="page-quiz-login">
+  <div class="container">
+    <div class="card">
+      <div class="card-title">الكويز / Midterm</div>
+      <div class="card-sub">أدخل بياناتك للبدء</div>
+      <div id="quizLoginError"></div>
+      <div class="form-group">
+        <label>الاسم الكامل</label>
+        <input type="text" id="qlName" placeholder="أدخل اسمك"/>
+      </div>
+      <div class="form-group">
+        <label>الرقم الجامعي / ID</label>
+        <input type="text" id="qlId" placeholder="Student ID" inputmode="numeric"/>
+      </div>
+      <div class="form-group">
+        <label>البريد الإلكتروني</label>
+        <input type="email" id="qlEmail" placeholder="your@email.com" inputmode="email"/>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="startQuiz()">بدء الامتحان ←</button>
+      <div style="text-align:center;margin-top:12px;">
+        <a href="#" onclick="showPage('page-landing');return false;" style="font-size:13px;color:var(--text-muted);">← رجوع</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PAGE: QUIZ
+══════════════════════════════════════════════ -->
+<div class="page" id="page-quiz">
+  <!-- Info bar -->
+  <div class="quiz-info-bar" id="quizInfoBar">
+    <span id="qInfoName">—</span>
+    <span class="timer-badge" id="timerEl">30:00</span>
+    <span id="qInfoProgress">0 / 0</span>
+  </div>
+
+  <div class="container" style="padding-top:16px;">
+    <!-- Progress -->
+    <div class="progress-wrap">
+      <div class="progress-bar" id="progressBar" style="width:0%"></div>
+    </div>
+
+    <!-- Questions rendered here -->
+    <div id="questionsWrap"></div>
+
+    <!-- Submit -->
+    <div class="card" id="submitCard" style="text-align:center;">
+      <div id="unansweredWarn" style="display:none;margin-bottom:12px;"></div>
+      <button class="btn btn-success btn-full" onclick="submitQuiz(false)">✅ إرسال الإجابات</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PAGE: RESULT / REVIEW
+══════════════════════════════════════════════ -->
+<div class="page" id="page-result">
+  <div class="container">
+    <!-- Score hero -->
+    <div class="result-hero" id="resultHero"></div>
+
+    <!-- Review section (only questions with showAfterExam:true) -->
+    <div id="reviewSection"></div>
+
+    <div style="text-align:center;margin-top:16px;">
+      <button class="btn btn-outline" onclick="showPage('page-landing')">🏠 الصفحة الرئيسية</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PAGE: PORTAL LOGIN (student grades)
+══════════════════════════════════════════════ -->
+<div class="page" id="page-portal-login">
+  <div class="container">
+    <div class="card">
+      <div class="card-title">📊 عرض درجاتي</div>
+      <div class="card-sub">أدخل رقمك الجامعي لعرض نتائجك</div>
+      <div id="portalLoginError"></div>
+      <div class="form-group">
+        <label>الرقم الجامعي / Student ID</label>
+        <input type="text" id="plId" placeholder="Student ID" inputmode="numeric"/>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="loadStudentGrades()">عرض درجاتي ←</button>
+      <div style="text-align:center;margin-top:12px;">
+        <a href="#" onclick="showPage('page-landing');return false;" style="font-size:13px;color:var(--text-muted);">← رجوع</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PAGE: STUDENT PROFILE
+══════════════════════════════════════════════ -->
+<div class="page" id="page-profile">
+  <div class="container">
+    <div class="profile-header" id="profileHeader"></div>
+    <div class="card">
+      <div class="card-title">سجل الدرجات</div>
+      <div id="gradesContent"></div>
+    </div>
+    <div style="text-align:center;margin-top:12px;">
+      <button class="btn btn-outline" onclick="showPage('page-landing')">🏠 الصفحة الرئيسية</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PAGE: ADMIN LOGIN
+══════════════════════════════════════════════ -->
+<div class="page" id="page-admin-login">
+  <div class="container">
+    <div class="card">
+      <div class="card-title">🔒 Admin Access</div>
+      <div class="card-sub">Authorized personnel only</div>
+      <div id="adminLoginError"></div>
+      <div class="form-group">
+        <label>Admin Password</label>
+        <input type="password" id="adminPwd" placeholder="Enter password" onkeydown="if(event.key==='Enter')checkAdminLogin()"/>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="checkAdminLogin()">Login →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PAGE: ADMIN DASHBOARD
+══════════════════════════════════════════════ -->
+<div class="page" id="page-admin">
+  <div class="container">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+      <div>
+        <div class="card-title">Admin Dashboard</div>
+        <div style="font-size:13px;color:var(--text-muted);">IEEE KSB Grade Management</div>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="adminLogout()">Logout</button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="admin-nav">
+      <div class="admin-tab active" onclick="switchAdminTab('tab-grades')">📝 Enter Grades</div>
+      <div class="admin-tab" onclick="switchAdminTab('tab-submissions')">📋 Quiz Submissions</div>
+      <div class="admin-tab" onclick="switchAdminTab('tab-students')">👥 Students</div>
+    </div>
+
+    <!-- TAB: Enter Grades -->
+    <div class="admin-panel active" id="tab-grades">
+      <div class="card">
+        <div class="card-title">Enter / Update Grade</div>
+        <div class="card-sub">Select a student, choose the assessment, then save the grade</div>
+        <div id="gradeEntryMsg"></div>
+        <div class="form-group">
+          <label>Student</label>
+          <select id="gradeStudent">
+            <option value="">— Loading students... —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Assessment</label>
+          <select id="gradeAssessment">
+            <option value="">— Select Assessment —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Grade (out of max)</label>
+          <input type="number" id="gradeValue" placeholder="e.g. 18" min="0"/>
+        </div>
+        <div class="form-group">
+          <label>Notes (optional)</label>
+          <textarea id="gradeNotes" placeholder="Absent, late submission, etc."></textarea>
+        </div>
+        <button class="btn btn-success" onclick="saveGrade()" id="saveGradeBtn">💾 Save Grade</button>
+      </div>
+    </div>
+
+    <!-- TAB: Submissions -->
+    <div class="admin-panel" id="tab-submissions">
+      <div class="refresh-row">
+        <div style="font-weight:600;">Quiz Submissions</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span style="font-size:12px;color:var(--text-muted);" id="subsLastRefresh"></span>
+          <button class="btn btn-outline btn-sm" onclick="loadSubmissions()">🔄 Refresh</button>
+        </div>
+      </div>
+      <div id="submissionsContent">
+        <div class="loading-wrap"><div class="spinner"></div>Loading...</div>
+      </div>
+    </div>
+
+    <!-- TAB: Students -->
+    <div class="admin-panel" id="tab-students">
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-title">Add New Student</div>
+        <div id="addStudentMsg"></div>
+        <div class="form-group">
+          <label>Student Name</label>
+          <input type="text" id="newStudentName" placeholder="Full name"/>
+        </div>
+        <div class="form-group">
+          <label>Student ID</label>
+          <input type="text" id="newStudentId" placeholder="Student ID" inputmode="numeric"/>
+        </div>
+        <div class="form-group">
+          <label>Email (optional)</label>
+          <input type="email" id="newStudentEmail" placeholder="student@email.com"/>
+        </div>
+        <button class="btn btn-primary" onclick="addStudent()">➕ Add Student</button>
+      </div>
+      <div class="refresh-row">
+        <div style="font-weight:600;">Student List</div>
+        <button class="btn btn-outline btn-sm" onclick="loadStudentList()">🔄 Refresh</button>
+      </div>
+      <div id="studentsListContent">
+        <div class="loading-wrap"><div class="spinner"></div>Loading...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════ -->
+<script>
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   CONFIG — UPDATE THESE AFTER DEPLOYING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+const CONFIG = {
+  appsScriptUrl: 'YOUR_APPS_SCRIPT_URL_HERE',  // ← Paste deployed Apps Script URL
+  adminPassword: 'KSA@2006',
+  quizTitle: 'Week 2 Quiz',                   // ← Change quiz name
+  totalTime: 30 * 60,                          // ← Quiz duration in seconds (30 min)
+  maxGrade: 25,                                // ← Total marks for this quiz
+
+  // Predefined assessments list (admin selects from these)
+  assessments: [
+    { id: 'week1-quiz',  label: 'Week 1 Quiz',   max: 30 },
+    { id: 'midterm',     label: 'Midterm',        max: 25 },
+    { id: 'week2-quiz',  label: 'Week 2 Quiz',    max: 25 },
+    { id: 'task1',       label: 'Task 1',         max: 10 },
+    { id: 'task2',       label: 'Task 2',         max: 10 },
+    { id: 'task3',       label: 'Task 3',         max: 10 },
+    { id: 'final',       label: 'Final Exam',     max: 50 },
+    // ↑ Add / remove assessments here freely
+  ],
+
+  // ━━ Per-question showAfterExam flag ━━
+  // Each question can override showAfterExam globally.
+  // Set globalShowAfterExam:true to show ALL questions in review by default
+  // then set showAfterExam:false per question to hide specific ones.
+  globalShowAfterExam: false,  // ← default for questions that don't set their own flag
+};
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   QUESTIONS ARRAY
+   Each question:
+   {
+     id: number,
+     type: 'mcq' | 'tf',
+     text: string,
+     options: string[],        // MCQ only
+     correct: number | boolean, // MCQ: index; TF: true/false
+     explanation: string,
+     showAfterExam: boolean,   // override per question (optional — falls back to globalShowAfterExam)
+   }
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+const QUESTIONS = [
+  {
+    id: 1,
+    type: 'mcq',
+    text: 'What does OSI stand for?',
+    options: [
+      'Open Systems Interconnection',
+      'Open Software Interface',
+      'Operating System Interface',
+      'Open Signal Interchange'
+    ],
+    correct: 0,
+    explanation: 'OSI stands for Open Systems Interconnection, a conceptual framework for network communication.',
+    showAfterExam: true,
+  },
+  {
+    id: 2,
+    type: 'mcq',
+    text: 'How many layers does the OSI model have?',
+    options: ['4', '5', '6', '7'],
+    correct: 3,
+    explanation: 'The OSI model has 7 layers: Physical, Data Link, Network, Transport, Session, Presentation, Application.',
+    showAfterExam: true,
+  },
+  {
+    id: 3,
+    type: 'tf',
+    text: 'TCP is a connectionless protocol.',
+    correct: false,
+    explanation: 'TCP is connection-oriented — it establishes a connection before transmitting data.',
+    showAfterExam: false,  // ← This question WON'T show in review
+  },
+  {
+    id: 4,
+    type: 'mcq',
+    text: 'Which layer of the OSI model is responsible for routing?',
+    options: ['Data Link', 'Network', 'Transport', 'Session'],
+    correct: 1,
+    explanation: 'The Network layer (Layer 3) handles logical addressing and routing between networks.',
+    showAfterExam: true,
+  },
+  {
+    id: 5,
+    type: 'tf',
+    text: 'UDP provides reliable, ordered delivery of data.',
+    correct: false,
+    explanation: 'UDP is unreliable and unordered — it sends packets without guaranteeing delivery or sequence.',
+    showAfterExam: true,
+  },
+  // ─── ADD MORE QUESTIONS BELOW ───
+  // {
+  //   id: 6,
+  //   type: 'mcq',
+  //   text: 'Your question here?',
+  //   options: ['A','B','C','D'],
+  //   correct: 0,
+  //   explanation: 'Explanation here.',
+  //   showAfterExam: true,
+  // },
+];
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   STATE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+let studentData = {};
+let answers = {};
+let timerInterval = null;
+let timeLeft = CONFIG.totalTime;
+let quizStartTime = null;
+let tabSwitchCount = 0;
+let acTimer = null;
+let submitted = false;
+let adminLoggedIn = false;
+let autoRefreshInterval = null;
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PAGE ROUTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function goQuiz(){ showPage('page-quiz-login'); }
+function goPortal(){ showPage('page-portal-login'); }
+
+// Admin via ?admin=1
+(function(){
+  if(new URLSearchParams(location.search).get('admin')==='1'){
+    showPage('page-admin-login');
+    document.getElementById('headerBadge').textContent='Admin';
+  }
+})();
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   TOAST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function toast(msg, dur=3000){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),dur);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   QUIZ LOGIC
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function startQuiz(){
+  const name=document.getElementById('qlName').value.trim();
+  const id=document.getElementById('qlId').value.trim();
+  const email=document.getElementById('qlEmail').value.trim();
+  const errEl=document.getElementById('quizLoginError');
+  errEl.innerHTML='';
+
+  if(!name||!id||!email){
+    errEl.innerHTML='<div class="alert alert-error">الرجاء إدخال جميع البيانات.</div>';
+    return;
+  }
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    errEl.innerHTML='<div class="alert alert-error">البريد الإلكتروني غير صحيح.</div>';
+    return;
+  }
+
+  studentData={name,id,email};
+  answers={};
+  timeLeft=CONFIG.totalTime;
+  submitted=false;
+  tabSwitchCount=0;
+  quizStartTime=new Date();
+
+  renderQuiz();
+  showPage('page-quiz');
+  document.getElementById('qInfoName').textContent=name;
+  startTimer();
+  setupAntiCheat();
+}
+
+function renderQuiz(){
+  const wrap=document.getElementById('questionsWrap');
+  wrap.innerHTML='';
+  QUESTIONS.forEach((q,i)=>{
+    const card=document.createElement('div');
+    card.className='q-card';
+    card.id='qcard-'+q.id;
+
+    let optHtml='';
+    if(q.type==='mcq'){
+      const letters=['A','B','C','D','E','F'];
+      optHtml=`<div class="options" id="opts-${q.id}">`;
+      q.options.forEach((o,oi)=>{
+        optHtml+=`<div class="option" id="opt-${q.id}-${oi}" onclick="selectMCQ(${q.id},${oi})">
+          <div class="opt-letter" id="optl-${q.id}-${oi}">${letters[oi]}</div>
+          <div>${o}</div>
+        </div>`;
+      });
+      optHtml+='</div>';
+    } else {
+      optHtml=`<div class="tf-options">
+        <div class="tf-btn" id="tf-${q.id}-true" onclick="selectTF(${q.id},true)">✓ True</div>
+        <div class="tf-btn" id="tf-${q.id}-false" onclick="selectTF(${q.id},false)">✗ False</div>
+      </div>`;
+    }
+
+    card.innerHTML=`
+      <div class="q-num">Question ${i+1} of ${QUESTIONS.length}</div>
+      <div class="q-text">${q.text}</div>
+      ${optHtml}
+      <div class="q-explanation" id="exp-${q.id}"></div>
+    `;
+    wrap.appendChild(card);
+  });
+  updateProgress();
+}
+
+function selectMCQ(qid, oi){
+  if(submitted) return;
+  answers[qid]=oi;
+  const q=QUESTIONS.find(x=>x.id===qid);
+  q.options.forEach((_,i)=>{
+    document.getElementById('opt-'+qid+'-'+i).className='option'+(i===oi?' selected':'');
+  });
+  updateProgress();
+}
+
+function selectTF(qid, val){
+  if(submitted) return;
+  answers[qid]=val;
+  document.getElementById('tf-'+qid+'-true').className='tf-btn'+(val===true?' selected':'');
+  document.getElementById('tf-'+qid+'-false').className='tf-btn'+(val===false?' selected':'');
+  updateProgress();
+}
+
+function updateProgress(){
+  const answered=Object.keys(answers).length;
+  const total=QUESTIONS.length;
+  const pct=(answered/total)*100;
+  document.getElementById('progressBar').style.width=pct+'%';
+  document.getElementById('qInfoProgress').textContent=answered+' / '+total;
+}
+
+/* Timer */
+function startTimer(){
+  clearInterval(timerInterval);
+  timerInterval=setInterval(()=>{
+    timeLeft--;
+    const m=Math.floor(timeLeft/60), s=timeLeft%60;
+    const el=document.getElementById('timerEl');
+    el.textContent=m+':'+(s<10?'0':'')+s;
+    if(timeLeft<=300) el.classList.add('warn');
+    if(timeLeft<=0){ clearInterval(timerInterval); submitQuiz(true); }
+  },1000);
+}
+
+/* Anti-cheat */
+function setupAntiCheat(){
+  document.addEventListener('visibilitychange', onVisChange);
+  window.addEventListener('blur', onBlur);
+}
+function teardownAntiCheat(){
+  document.removeEventListener('visibilitychange', onVisChange);
+  window.removeEventListener('blur', onBlur);
+}
+function onVisChange(){ if(document.hidden && !submitted) triggerAC(); }
+function onBlur(){ if(!submitted) triggerAC(); }
+
+function triggerAC(){
+  if(submitted) return;
+  tabSwitchCount++;
+  const overlay=document.getElementById('acOverlay');
+  overlay.classList.add('show');
+  let c=3;
+  document.getElementById('acCount').textContent=c;
+  acTimer=setInterval(()=>{
+    c--;
+    document.getElementById('acCount').textContent=c;
+    if(c<=0){
+      clearInterval(acTimer);
+      overlay.classList.remove('show');
+    }
+  },1000);
+}
+
+/* Submit */
+async function submitQuiz(autoSubmit=false){
+  if(submitted) return;
+
+  // Check unanswered
+  const unanswered=QUESTIONS.filter(q=>answers[q.id]===undefined);
+  if(!autoSubmit && unanswered.length>0){
+    const warn=document.getElementById('unansweredWarn');
+    warn.style.display='block';
+    warn.innerHTML=`<div class="alert alert-error">
+      <strong>⚠️ ${unanswered.length} سؤال لم تجب عليه:</strong>
+      <div class="unanswered-list">
+        ${unanswered.map(q=>`<span class="unanswered-pill" onclick="document.getElementById('qcard-${q.id}').scrollIntoView({behavior:'smooth'})">س${QUESTIONS.indexOf(q)+1}</span>`).join('')}
+      </div>
+      <div style="margin-top:8px;">هل تريد الإرسال على أي حال؟
+        <button class="btn btn-danger btn-sm" style="margin-top:8px;" onclick="submitQuiz(true)">إرسال على أي حال</button>
+      </div>
+    </div>`;
+    return;
+  }
+
+  submitted=true;
+  clearInterval(timerInterval);
+  teardownAntiCheat();
+
+  // Calculate score
+  let correct=0;
+  QUESTIONS.forEach(q=>{
+    const a=answers[q.id];
+    if(a===undefined) return;
+    if(q.type==='mcq' && a===q.correct) correct++;
+    if(q.type==='tf' && a===q.correct) correct++;
+  });
+  const score=Math.round((correct/QUESTIONS.length)*CONFIG.maxGrade);
+  const timeTaken=Math.floor((new Date()-quizStartTime)/1000);
+
+  showPage('page-result');
+  renderResult(correct, score, timeTaken, unanswered.length);
+  renderReview();
+
+  // Send to Apps Script
+  if(CONFIG.appsScriptUrl !== 'YOUR_APPS_SCRIPT_URL_HERE'){
+    try{
+      await fetch(CONFIG.appsScriptUrl,{
+        method:'POST',
+        body:JSON.stringify({
+          action:'submitQuiz',
+          name:studentData.name,
+          studentId:studentData.id,
+          email:studentData.email,
+          score,
+          totalQuestions:QUESTIONS.length,
+          correctAnswers:correct,
+          maxGrade:CONFIG.maxGrade,
+          quizTitle:CONFIG.quizTitle,
+          timeTaken,
+          tabSwitchCount,
+        })
+      });
+      toast('✅ إجاباتك تم إرسالها بنجاح');
+    } catch(e){
+      toast('⚠️ فشل الإرسال — تحقق من الاتصال');
+    }
+  }
+}
+
+function renderResult(correct, score, timeTaken, unansweredCount){
+  const pct=Math.round((score/CONFIG.maxGrade)*100);
+  let grade,gClass;
+  if(pct>=90){grade='A';gClass='grade-A';}
+  else if(pct>=80){grade='B';gClass='grade-B';}
+  else if(pct>=70){grade='C';gClass='grade-C';}
+  else if(pct>=60){grade='D';gClass='grade-D';}
+  else{grade='F';gClass='grade-F';}
+
+  const m=Math.floor(timeTaken/60), s=timeTaken%60;
+  document.getElementById('resultHero').innerHTML=`
+    <div style="font-size:14px;opacity:.8;margin-bottom:8px;">${CONFIG.quizTitle}</div>
+    <div class="result-score">${score}<span style="font-size:0.45em;opacity:.7">/${CONFIG.maxGrade}</span></div>
+    <div class="result-label">${correct} صحيح من ${QUESTIONS.length} سؤال</div>
+    <div class="result-meta">
+      <div class="result-stat"><div class="val">${pct}%</div><div class="key">النسبة</div></div>
+      <div class="result-stat"><div class="val"><span class="grade-pill ${gClass}">${grade}</span></div><div class="key">التقدير</div></div>
+      <div class="result-stat"><div class="val">${m}:${s<10?'0':''}${s}</div><div class="key">الوقت</div></div>
+    </div>
+  `;
+}
+
+function renderReview(){
+  const sec=document.getElementById('reviewSection');
+  const reviewable=QUESTIONS.filter(q=>{
+    const show = q.showAfterExam !== undefined ? q.showAfterExam : CONFIG.globalShowAfterExam;
+    return show;
+  });
+  if(reviewable.length===0){ sec.innerHTML=''; return; }
+
+  const letters=['A','B','C','D','E','F'];
+  let html=`<div class="card"><div class="card-title">مراجعة الإجابات</div><div class="card-sub">الأسئلة المتاحة للمراجعة (${reviewable.length} سؤال)</div>`;
+
+  reviewable.forEach((q,i)=>{
+    const userAns=answers[q.id];
+    const isCorrect = q.type==='mcq'
+      ? userAns===q.correct
+      : userAns===q.correct;
+
+    html+=`<div style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border);">
+      <div class="q-num">سؤال ${QUESTIONS.indexOf(q)+1} ${isCorrect?'✅':'❌'}</div>
+      <div class="q-text" style="margin-bottom:12px;">${q.text}</div>`;
+
+    if(q.type==='mcq'){
+      q.options.forEach((o,oi)=>{
+        let cls='option';
+        if(oi===q.correct) cls+=' correct';
+        else if(oi===userAns && userAns!==q.correct) cls+=' wrong';
+        html+=`<div class="${cls}" style="margin-bottom:7px;">
+          <div class="opt-letter">${letters[oi]}</div>
+          <div>${o}</div>
+        </div>`;
+      });
+    } else {
+      const tCls='tf-btn'+(q.correct===true?' correct':'')+(userAns===true&&q.correct!==true?' wrong':'');
+      const fCls='tf-btn'+(q.correct===false?' correct':'')+(userAns===false&&q.correct!==false?' wrong':'');
+      html+=`<div class="tf-options">
+        <div class="${tCls}">✓ True</div>
+        <div class="${fCls}">✗ False</div>
+      </div>`;
+    }
+
+    if(q.explanation){
+      html+=`<div style="margin-top:10px;padding:10px 14px;background:var(--ieee-light);border-radius:8px;font-size:13px;color:var(--ieee-dark);border-left:3px solid var(--ieee-accent);">
+        💡 ${q.explanation}
+      </div>`;
+    }
+    html+='</div>';
+  });
+
+  html+='</div>';
+  sec.innerHTML=html;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   STUDENT PORTAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+async function loadStudentGrades(){
+  const id=document.getElementById('plId').value.trim();
+  const errEl=document.getElementById('portalLoginError');
+  errEl.innerHTML='';
+  if(!id){ errEl.innerHTML='<div class="alert alert-error">الرجاء إدخال رقمك الجامعي.</div>'; return; }
+
+  errEl.innerHTML='<div class="loading-wrap"><div class="spinner"></div></div>';
+
+  if(CONFIG.appsScriptUrl==='YOUR_APPS_SCRIPT_URL_HERE'){
+    // Demo mode
+    showProfile({id,name:'Demo Student'}, [
+      {assessment:'Week 1 Quiz',grade:24,maxGrade:30,date:'2024-11-01'},
+      {assessment:'Midterm',grade:21,maxGrade:25,date:'2024-11-12'},
+    ]);
+    return;
+  }
+
+  try{
+    const res=await fetch(`${CONFIG.appsScriptUrl}?action=getGrades&studentId=${encodeURIComponent(id)}&key=${encodeURIComponent(CONFIG.adminPassword)}`);
+    const data=await res.json();
+    if(data.error){ errEl.innerHTML=`<div class="alert alert-error">${data.error}</div>`; return; }
+    showProfile(data.student, data.grades);
+  } catch(e){
+    errEl.innerHTML='<div class="alert alert-error">تعذر الاتصال بالخادم.</div>';
+  }
+}
+
+function showProfile(student, grades){
+  document.getElementById('profileHeader').innerHTML=`
+    <div class="profile-avatar">${(student.name||'?')[0].toUpperCase()}</div>
+    <div>
+      <div class="profile-name">${student.name||'Student'}</div>
+      <div class="profile-id">ID: ${student.id}</div>
+    </div>
+  `;
+
+  if(!grades||grades.length===0){
+    document.getElementById('gradesContent').innerHTML='<div style="text-align:center;padding:28px;color:var(--text-muted);">لا توجد درجات مسجلة بعد.</div>';
+  } else {
+    let totalEarned=0, totalMax=0;
+    let rows=grades.map(g=>{
+      totalEarned+=Number(g.grade)||0;
+      totalMax+=Number(g.maxGrade)||0;
+      const pct=g.maxGrade?Math.round((g.grade/g.maxGrade)*100):'-';
+      return `<tr>
+        <td><strong>${g.assessment}</strong></td>
+        <td>${g.grade} / ${g.maxGrade}</td>
+        <td>${pct}%</td>
+        <td style="font-size:12px;color:var(--text-muted);">${g.date||''}</td>
+        <td>${g.notes||'—'}</td>
+      </tr>`;
+    }).join('');
+    const overallPct=totalMax?Math.round((totalEarned/totalMax)*100):'-';
+    document.getElementById('gradesContent').innerHTML=`
+      <div class="table-wrap" style="margin-bottom:16px;">
+        <table class="grades-table">
+          <thead><tr><th>Assessment</th><th>Grade</th><th>%</th><th>Date</th><th>Notes</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div class="alert alert-info">
+        <strong>المجموع الكلي:</strong> ${totalEarned} / ${totalMax} (${overallPct}%)
+      </div>
+    `;
+  }
+  showPage('page-profile');
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ADMIN LOGIC
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function checkAdminLogin(){
+  const pwd=document.getElementById('adminPwd').value;
+  if(pwd===CONFIG.adminPassword){
+    adminLoggedIn=true;
+    showPage('page-admin');
+    document.getElementById('headerBadge').textContent='Admin Dashboard';
+    populateAssessmentsDropdown();
+    loadAdminStudents();
+    loadSubmissions();
+    startAutoRefresh();
+  } else {
+    document.getElementById('adminLoginError').innerHTML='<div class="alert alert-error">كلمة المرور غير صحيحة.</div>';
+  }
+}
+
+function adminLogout(){
+  adminLoggedIn=false;
+  clearInterval(autoRefreshInterval);
+  showPage('page-landing');
+  document.getElementById('headerBadge').textContent='Portal';
+}
+
+function switchAdminTab(id){
+  document.querySelectorAll('.admin-tab').forEach((t,i)=>{
+    const panels=['tab-grades','tab-submissions','tab-students'];
+    t.classList.toggle('active', 'tab-'+['grades','submissions','students'][i]===id);
+  });
+  document.querySelectorAll('.admin-panel').forEach(p=>p.classList.toggle('active',p.id===id));
+}
+
+function populateAssessmentsDropdown(){
+  const sel=document.getElementById('gradeAssessment');
+  sel.innerHTML='<option value="">— Select Assessment —</option>';
+  CONFIG.assessments.forEach(a=>{
+    sel.innerHTML+=`<option value="${a.id}" data-max="${a.max}">${a.label} (max: ${a.max})</option>`;
+  });
+  sel.addEventListener('change',()=>{
+    const opt=sel.selectedOptions[0];
+    if(opt&&opt.dataset.max){
+      document.getElementById('gradeValue').max=opt.dataset.max;
+      document.getElementById('gradeValue').placeholder=`0 – ${opt.dataset.max}`;
+    }
+  });
+}
+
+// Hardcoded roster — always available even without Apps Script
+const STUDENT_ROSTER=[
+  {id:'47784',name:'Mohammed Elsayed'},
+  {id:'92169',name:'Reem Abdelhamid'},
+  {id:'96125',name:'Mostafa Haasan'},
+  {id:'31610',name:'Mohamed Tamer'},
+  {id:'92545',name:'Ziad khaled'},
+  {id:'95186',name:'Menna Mosaad'},
+  {id:'35567',name:'Amr Sabry'},
+  {id:'11006',name:'Khloud Mahdy'},
+  {id:'32755',name:'Mariam Shaban'},
+  {id:'52345',name:'Muhammed Fouad'},
+  {id:'22294',name:'Nada Waleed'},
+  {id:'71430',name:'Ahmed Mohamed'},
+  {id:'76903',name:'Maryam Taha'},
+  {id:'38231',name:'Sama Saber'},
+  {id:'40106',name:'Bothina Atef'},
+  {id:'24055',name:'Jana fahim'},
+  {id:'73760',name:'Eman nabih'},
+  {id:'26087',name:'Enas Ahmed'},
+  {id:'12959',name:'Arwa Tamer'},
+  {id:'35206',name:'Omar ibrahim'},
+  {id:'07174',name:'Donia Ashraf'},
+  {id:'05375',name:'Nesreen Hossam'},
+  {id:'39236',name:'Mariam Hamdy'},
+  {id:'28937',name:'Habiba saad'},
+];
+
+function populateStudentDropdown(extraStudents=[]){
+  const all=[...STUDENT_ROSTER,...extraStudents];
+  const sel=document.getElementById('gradeStudent');
+  sel.innerHTML='<option value="">— اختر الطالب —</option>';
+  all.forEach(s=>{
+    sel.innerHTML+=`<option value="${s.id}">${s.id} — ${s.name}</option>`;
+  });
+}
+
+async function loadAdminStudents(){
+  populateStudentDropdown(); // load roster immediately
+  if(CONFIG.appsScriptUrl==='YOUR_APPS_SCRIPT_URL_HERE') return;
+  try{
+    const res=await fetch(`${CONFIG.appsScriptUrl}?action=getStudents&key=${encodeURIComponent(CONFIG.adminPassword)}`);
+    const data=await res.json();
+    // Merge any extra students from sheet with roster
+    const extra=(data.students||[]).filter(s=>!STUDENT_ROSTER.find(r=>r.id===s.id));
+    populateStudentDropdown(extra);
+  } catch(e){ toast('Failed to sync students from sheet'); }
+}
+
+async function loadStudentList(){
+  const content=document.getElementById('studentsListContent');
+  if(CONFIG.appsScriptUrl==='YOUR_APPS_SCRIPT_URL_HERE'){
+    content.innerHTML='<div class="alert alert-info">Demo mode — connect Apps Script to see real data.</div>';
+    return;
+  }
+  content.innerHTML='<div class="loading-wrap"><div class="spinner"></div>Loading...</div>';
+  try{
+    const res=await fetch(`${CONFIG.appsScriptUrl}?action=getStudents&key=${encodeURIComponent(CONFIG.adminPassword)}`);
+    const data=await res.json();
+    if(!data.students||data.students.length===0){
+      content.innerHTML='<div class="alert alert-info">No students yet.</div>'; return;
+    }
+    content.innerHTML=`<div class="table-wrap"><table class="subs-table">
+      <thead><tr><th>ID</th><th>Name</th><th>Email</th></tr></thead>
+      <tbody>${data.students.map(s=>`<tr><td>${s.id}</td><td>${s.name}</td><td>${s.email||'—'}</td></tr>`).join('')}</tbody>
+    </table></div>`;
+  } catch(e){ content.innerHTML='<div class="alert alert-error">Failed to load.</div>'; }
+}
+
+async function saveGrade(){
+  const studentId=document.getElementById('gradeStudent').value;
+  const assessment=document.getElementById('gradeAssessment').value;
+  const grade=document.getElementById('gradeValue').value;
+  const notes=document.getElementById('gradeNotes').value.trim();
+  const msgEl=document.getElementById('gradeEntryMsg');
+  msgEl.innerHTML='';
+
+  if(!studentId||!assessment||grade===''){
+    msgEl.innerHTML='<div class="alert alert-error">Please fill Student, Assessment and Grade.</div>'; return;
+  }
+
+  const btn=document.getElementById('saveGradeBtn');
+  btn.disabled=true; btn.textContent='Saving...';
+
+  if(CONFIG.appsScriptUrl==='YOUR_APPS_SCRIPT_URL_HERE'){
+    setTimeout(()=>{
+      btn.disabled=false; btn.textContent='💾 Save Grade';
+      msgEl.innerHTML='<div class="alert alert-success">✅ Demo: Grade saved (connect Apps Script for real save).</div>';
+    },800);
+    return;
+  }
+
+  try{
+    const res=await fetch(CONFIG.appsScriptUrl,{
+      method:'POST',
+      body:JSON.stringify({action:'setGrade',studentId,assessment,grade:Number(grade),notes,adminKey:CONFIG.adminPassword})
+    });
+    const data=await res.json();
+    if(data.ok){
+      msgEl.innerHTML='<div class="alert alert-success">✅ Grade saved successfully.</div>';
+      document.getElementById('gradeValue').value='';
+      document.getElementById('gradeNotes').value='';
+    } else {
+      msgEl.innerHTML=`<div class="alert alert-error">${data.error||'Unknown error.'}</div>`;
+    }
+  } catch(e){
+    msgEl.innerHTML='<div class="alert alert-error">Connection failed.</div>';
+  }
+  btn.disabled=false; btn.textContent='💾 Save Grade';
+}
+
+async function addStudent(){
+  const name=document.getElementById('newStudentName').value.trim();
+  const id=document.getElementById('newStudentId').value.trim();
+  const email=document.getElementById('newStudentEmail').value.trim();
+  const msgEl=document.getElementById('addStudentMsg');
+  msgEl.innerHTML='';
+  if(!name||!id){ msgEl.innerHTML='<div class="alert alert-error">Name and ID are required.</div>'; return; }
+
+  if(CONFIG.appsScriptUrl==='YOUR_APPS_SCRIPT_URL_HERE'){
+    msgEl.innerHTML='<div class="alert alert-success">Demo: Student added (connect Apps Script).</div>'; return;
+  }
+
+  try{
+    const res=await fetch(CONFIG.appsScriptUrl,{
+      method:'POST',
+      body:JSON.stringify({action:'addStudent',name,studentId:id,email,adminKey:CONFIG.adminPassword})
+    });
+    const data=await res.json();
+    if(data.ok){
+      msgEl.innerHTML='<div class="alert alert-success">✅ Student added.</div>';
+      document.getElementById('newStudentName').value='';
+      document.getElementById('newStudentId').value='';
+      document.getElementById('newStudentEmail').value='';
+      loadAdminStudents();
+      loadStudentList();
+    } else {
+      msgEl.innerHTML=`<div class="alert alert-error">${data.error||'Error.'}</div>`;
+    }
+  } catch(e){ msgEl.innerHTML='<div class="alert alert-error">Connection failed.</div>'; }
+}
+
+async function loadSubmissions(){
+  const content=document.getElementById('submissionsContent');
+  content.innerHTML='<div class="loading-wrap"><div class="spinner"></div>Loading...</div>';
+  document.getElementById('subsLastRefresh').textContent='';
+
+  if(CONFIG.appsScriptUrl==='YOUR_APPS_SCRIPT_URL_HERE'){
+    content.innerHTML='<div class="alert alert-info">Demo mode — connect Apps Script to see submissions.</div>';
+    return;
+  }
+
+  try{
+    const res=await fetch(`${CONFIG.appsScriptUrl}?action=getSubmissions&key=${encodeURIComponent(CONFIG.adminPassword)}`);
+    const data=await res.json();
+    const subs=data.submissions||[];
+    document.getElementById('subsLastRefresh').textContent='Updated: '+new Date().toLocaleTimeString();
+
+    if(subs.length===0){
+      content.innerHTML='<div class="alert alert-info">No submissions yet.</div>'; return;
+    }
+
+    content.innerHTML=`<div class="table-wrap"><table class="subs-table">
+      <thead><tr><th>#</th><th>Name</th><th>ID</th><th>Score</th><th>%</th><th>Time</th><th>Switches</th><th>Submitted</th></tr></thead>
+      <tbody>${subs.map((s,i)=>{
+        const pct=s.maxGrade?Math.round((s.score/s.maxGrade)*100):'-';
+        const m=Math.floor((s.timeTaken||0)/60), sec=(s.timeTaken||0)%60;
+        return `<tr>
+          <td>${i+1}</td>
+          <td>${s.name}</td>
+          <td>${s.studentId}</td>
+          <td><strong>${s.score}/${s.maxGrade}</strong></td>
+          <td>${pct}%</td>
+          <td>${m}:${sec<10?'0':''}${sec}</td>
+          <td style="color:${s.tabSwitchCount>0?'var(--danger)':'inherit'}">${s.tabSwitchCount||0}</td>
+          <td style="font-size:11px;">${s.submittedAt||''}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>`;
+  } catch(e){ content.innerHTML='<div class="alert alert-error">Failed to load submissions.</div>'; }
+}
+
+function startAutoRefresh(){
+  clearInterval(autoRefreshInterval);
+  autoRefreshInterval=setInterval(()=>{
+    if(document.getElementById('tab-submissions').classList.contains('active')){
+      loadSubmissions();
+    }
+  }, 10000);
+}
+</script>
+</body>
+</html>
