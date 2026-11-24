@@ -110,6 +110,10 @@ function doGet(e) {
     return jsonOut(getSubmissions());
   }
 
+  if (action === 'getAllGrades') {
+    return jsonOut(getAllGrades());
+  }
+
   return jsonOut({ error: 'Unknown action' });
 }
 
@@ -158,6 +162,50 @@ function getHeaders(sheet) {
   const map = {};
   row.forEach((h, i) => { map[h] = i; });
   return map;
+}
+
+// ───────────────────────────────────────────────────────────
+//  READ: All grades for grade book (admin)
+// ───────────────────────────────────────────────────────────
+function getAllGrades() {
+  // Manual grades
+  const gs = getSheet('Grades');
+  const manualGrades = [];
+  if (gs && gs.getLastRow() > 1) {
+    const data = gs.getDataRange().getValues();
+    const h    = getHeaders(gs);
+    data.slice(1).forEach(row => {
+      manualGrades.push({
+        studentId:   String(row[h['Student ID']]   || '').trim(),
+        studentName: String(row[h['Student Name']] || '').trim(),
+        assessment:  String(row[h['Assessment']]   || '').trim(),
+        grade:       row[h['Grade']],
+        maxGrade:    row[h['Max Grade']],
+        date:        row[h['Date']] ? new Date(row[h['Date']]).toLocaleDateString('en-GB') : '',
+        notes:       String(row[h['Notes']] || ''),
+      });
+    });
+  }
+
+  // Quiz submissions
+  const ss = getSheet('Submissions');
+  const submissions = [];
+  if (ss && ss.getLastRow() > 1) {
+    const data = ss.getDataRange().getValues();
+    const h    = getHeaders(ss);
+    data.slice(1).forEach(row => {
+      submissions.push({
+        studentId:  String(row[h['Student ID']] || '').trim(),
+        name:       String(row[h['Name']]       || '').trim(),
+        quizTitle:  String(row[h['Quiz Title']] || '').trim(),
+        score:      row[h['Score']],
+        maxGrade:   row[h['Max Grade']],
+        submittedAt: row[h['Submitted At']] ? new Date(row[h['Submitted At']]).toLocaleDateString('en-GB') : '',
+      });
+    });
+  }
+
+  return { manualGrades, submissions };
 }
 
 // ───────────────────────────────────────────────────────────

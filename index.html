@@ -411,6 +411,7 @@ textarea{resize:vertical;min-height:70px;}
     </div>
     <div class="admin-nav">
       <div class="admin-tab active" onclick="switchAdminTab('tab-grades')">Enter Grades</div>
+      <div class="admin-tab" onclick="switchAdminTab('tab-gradebook')">Grade Book</div>
       <div class="admin-tab" onclick="switchAdminTab('tab-submissions')">Quiz Submissions</div>
       <div class="admin-tab" onclick="switchAdminTab('tab-students')">Students</div>
     </div>
@@ -443,6 +444,23 @@ textarea{resize:vertical;min-height:70px;}
         </div>
         <button class="btn btn-success" onclick="saveGrade()" id="saveGradeBtn">Save Grade</button>
       </div>
+    </div>
+
+    <!-- Grade Book -->
+    <div class="admin-panel" id="tab-gradebook">
+      <div class="refresh-row">
+        <div>
+          <div style="font-weight:700;font-size:15px;">Grade Book</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">All students — all assessments</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <select id="gbFilter" style="font-size:13px;padding:6px 10px;border-radius:7px;border:1.5px solid var(--border);" onchange="renderGradeBook()">
+            <option value="">All Assessments</option>
+          </select>
+          <button class="btn btn-outline btn-sm" onclick="loadGradeBook()">Refresh</button>
+        </div>
+      </div>
+      <div id="gradebookContent"><div class="loading-wrap"><div class="spinner"></div>Loading...</div></div>
     </div>
 
     <!-- Submissions -->
@@ -1010,10 +1028,11 @@ function checkAdminLogin(){
 function adminLogout(){clearInterval(autoRefreshInterval);showPage('page-login');document.getElementById('headerBadge').textContent='Portal';}
 function switchAdminTab(id){
   document.querySelectorAll('.admin-tab').forEach((t,i)=>{
-    const ids=['tab-grades','tab-submissions','tab-students'];
+    const ids=['tab-grades','tab-gradebook','tab-submissions','tab-students'];
     t.classList.toggle('active',ids[i]===id);
   });
   document.querySelectorAll('.admin-panel').forEach(p=>p.classList.toggle('active',p.id===id));
+  if(id==='tab-gradebook') loadGradeBook();
 }
 function populateAssessmentsDropdown(){
   const sel=document.getElementById('gradeAssessment');
@@ -1084,6 +1103,116 @@ async function loadStudentList(){
     </table></div>`;
   }catch(e){content.innerHTML='<div class="alert alert-error">Failed to load.</div>';}
 }
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   GRADE BOOK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+let gradeBookData = null; // cached
+
+async function loadGradeBook(){
+  const content = document.getElementById('gradebookContent');
+  content.innerHTML = '<div class="loading-wrap"><div class="spinner"></div>Loading grade book...</div>';
+  try{
+    const res = await fetch(`${CONFIG.appsScriptUrl}?action=getAllGrades&key=${encodeURIComponent(CONFIG.adminPassword)}`);
+    const data = await res.json();
+    gradeBookData = data;
+    // Populate filter dropdown
+    const sel = document.getElementById('gbFilter');
+    const assessments = [...new Set([
+      ...(data.manualGrades||[]).map(g=>g.assessment),
+      ...(data.submissions||[]).map(g=>g.quizTitle),
+    ])].filter(Boolean).sort();
+    sel.innerHTML = '<option value="">All Assessments</option>';
+    assessments.forEach(a => { sel.innerHTML += `<option value="${a}">${a}</option>`; });
+    renderGradeBook();
+  } catch(e){
+    content.innerHTML = '<div class="alert alert-error">Failed to load grade book.</div>';
+  }
+}
+
+function renderGradeBook(){
+  if(!gradeBookData){ loadGradeBook(); return; }
+  const filter = document.getElementById('gbFilter').value;
+  const content = document.getElementById('gradebookContent');
+
+  // Build student → assessment → grade map
+  const studentMap = {}; // {id: {name, grades: {assessment: {grade, max}}}}
+
+  // From manual grades
+  (gradeBookData.manualGrades||[]).forEach(g=>{
+    if(filter && g.assessment !== filter) return;
+    if(!studentMap[g.studentId]) studentMap[g.studentId]={name:g.studentName||g.studentId, grades:{}};
+    studentMap[g.studentId].grades[g.assessment]={grade:g.grade, max:g.maxGrade};
+  });
+
+  // From quiz submissions
+  (gradeBookData.submissions||[]).forEach(g=>{
+    if(filter && g.quizTitle !== filter) return;
+    if(!studentMap[g.studentId]) studentMap[g.studentId]={name:g.name||g.studentId, grades:{}};
+    // Only keep latest submission per quiz
+    const key = g.quizTitle;
+    if(!studentMap[g.studentId].grades[key]){
+      studentMap[g.studentId].grades[key]={grade:g.score, max:g.maxGrade};
+    }
+  });
+
+  // Also include students with no grades
+  STUDENT_ROSTER.forEach(s=>{
+    if(!studentMap[s.id]) studentMap[s.id]={name:s.name, grades:{}};
+    if(!studentMap[s.id].name) studentMap[s.id].name=s.name;
+  });
+
+  // Collect all assessment columns
+  const allAssessments = [...new Set(
+    Object.values(studentMap).flatMap(s=>Object.keys(s.grades))
+  )].sort();
+
+  if(allAssessments.length === 0){
+    content.innerHTML = '<div class="alert alert-info">No grades recorded yet.</div>';
+    return;
+  }
+
+  // Sort students by name
+  const students = Object.entries(studentMap)
+    .map(([id,v])=>({id,name:v.name,grades:v.grades}))
+    .sort((a,b)=>a.name.localeCompare(b.name));
+
+  // Render table
+  let html = `<div class="table-wrap"><table class="subs-table">
+    <thead><tr>
+      <th style="min-width:140px;">Student</th>
+      <th>ID</th>
+      ${allAssessments.map(a=>`<th style="min-width:90px;">${a}</th>`).join('')}
+      <th>Total</th>
+    </tr></thead>
+    <tbody>`;
+
+  students.forEach(s=>{
+    let totalEarned=0, totalMax=0;
+    const cells = allAssessments.map(a=>{
+      const g = s.grades[a];
+      if(!g || g.grade==='' || g.grade===undefined) return '<td style="color:#cbd5e1;">—</td>';
+      const pct = g.max ? Math.round((g.grade/g.max)*100) : null;
+      totalEarned += Number(g.grade)||0;
+      totalMax    += Number(g.max)||0;
+      let color = '';
+      if(pct!==null){ color = pct>=80?'color:var(--success)':pct>=60?'color:var(--warn)':'color:var(--danger)'; }
+      return `<td style="${color};font-weight:600;">${g.grade}/${g.max}${pct!==null?`<br><span style="font-size:10px;opacity:.7">${pct}%</span>`:''}</td>`;
+    }).join('');
+
+    const totalPct = totalMax ? Math.round((totalEarned/totalMax)*100) : null;
+    const totalColor = totalPct===null?'':totalPct>=80?'color:var(--success)':totalPct>=60?'color:var(--warn)':'color:var(--danger)';
+    html += `<tr>
+      <td><strong>${s.name}</strong></td>
+      <td style="font-size:12px;color:var(--text-muted);">${s.id}</td>
+      ${cells}
+      <td style="${totalColor};font-weight:700;">${totalMax?`${totalEarned}/${totalMax}${totalPct!==null?`<br><span style="font-size:10px;">${totalPct}%</span>`:'`'}`:''}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table></div>';
+  content.innerHTML = html;
+}
+
 function startAutoRefresh(){
   clearInterval(autoRefreshInterval);
   autoRefreshInterval=setInterval(()=>{if(document.getElementById('tab-submissions').classList.contains('active'))loadSubmissions();},10000);
