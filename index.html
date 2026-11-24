@@ -1082,6 +1082,16 @@ async function saveGrade(){
   }catch(e){msgEl.innerHTML='<div class="alert alert-error">Connection failed.</div>';}
   btn.disabled=false;btn.textContent='Save Grade';
 }
+async function deleteStudent(id, name){
+  if(!confirm(`Remove "${name}" (ID: ${id})?\nThis cannot be undone.`)) return;
+  try{
+    const res=await fetch(CONFIG.appsScriptUrl,{method:'POST',body:JSON.stringify({action:'deleteStudent',studentId:id,adminKey:CONFIG.adminPassword})});
+    const data=await res.json();
+    if(data.ok){ toast(`${name} removed.`); loadStudentList(); populateStudentDropdown(); }
+    else{ alert(data.error||'Error removing student.'); }
+  }catch(e){ alert('Connection failed.'); }
+}
+
 async function addStudent(){
   const name=document.getElementById('newStudentName').value.trim();
   const id=document.getElementById('newStudentId').value.trim();
@@ -1118,8 +1128,12 @@ async function loadStudentList(){
     const data=await res.json();
     if(!data.students||data.students.length===0){content.innerHTML='<div class="alert alert-info">No students yet.</div>';return;}
     content.innerHTML=`<div class="table-wrap"><table class="subs-table">
-      <thead><tr><th>ID</th><th>Name</th></tr></thead>
-      <tbody>${data.students.map(s=>`<tr><td>${s.id}</td><td>${s.name}</td></tr>`).join('')}</tbody>
+      <thead><tr><th>ID</th><th>Name</th><th></th></tr></thead>
+      <tbody>${data.students.map(s=>`<tr>
+        <td>${s.id}</td>
+        <td>${s.name}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteStudent('${s.id}','${s.name}')">Remove</button></td>
+      </tr>`).join('')}</tbody>
     </table></div>`;
   }catch(e){content.innerHTML='<div class="alert alert-error">Failed to load.</div>';}
 }

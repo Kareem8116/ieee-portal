@@ -137,8 +137,9 @@ function doPost(e) {
     return jsonOut({ error: 'Unauthorized' });
   }
 
-  if (action === 'setGrade')   return jsonOut(setGrade(body));
-  if (action === 'addStudent') return jsonOut(addStudent(body));
+  if (action === 'setGrade')      return jsonOut(setGrade(body));
+  if (action === 'addStudent')    return jsonOut(addStudent(body));
+  if (action === 'deleteStudent') return jsonOut(deleteStudent(body));
 
   return jsonOut({ error: 'Unknown action' });
 }
@@ -410,6 +411,28 @@ function setGrade(body) {
   } finally {
     lock.releaseLock();
   }
+}
+
+// ───────────────────────────────────────────────────────────
+//  WRITE: Delete student (admin)
+// ───────────────────────────────────────────────────────────
+function deleteStudent(body) {
+  const { studentId } = body;
+  if (!studentId) return { error: 'Student ID required.' };
+
+  const sheet = getSheet('Students');
+  if (!sheet) return { error: 'Students sheet not found.' };
+
+  const data = sheet.getDataRange().getValues();
+  const h    = getHeaders(sheet);
+
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][h['ID']]).trim() === String(studentId).trim()) {
+      sheet.deleteRow(i + 1);
+      return { ok: true };
+    }
+  }
+  return { error: `Student ID ${studentId} not found.` };
 }
 
 // ───────────────────────────────────────────────────────────
