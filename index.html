@@ -737,7 +737,7 @@ function loginWithId(){
   }
 
   currentStudent = student;
-  try{ localStorage.setItem('ieee_student', JSON.stringify(student)); }catch(e){}
+  try{ sessionStorage.setItem('ieee_student', JSON.stringify(student)); }catch(e){}
   loadDashboard();
 }
 
@@ -746,7 +746,7 @@ function logout(){
   teardownAntiCheat();
   currentStudent = null;
   currentExam = null;
-  try{ localStorage.removeItem('ieee_student'); }catch(e){}
+  try{ sessionStorage.removeItem('ieee_student'); }catch(e){}
   document.getElementById('loginId').value = '';
   document.getElementById('loginError').innerHTML = '';
   showPage('page-login');
@@ -1202,7 +1202,7 @@ function enterAdminPanel(){
   loadStudentList();
   startAutoRefresh();
   try{
-    const savedTab = localStorage.getItem('ieee_admin_tab');
+    const savedTab = sessionStorage.getItem('ieee_admin_tab');
     if(savedTab && ['tab-grades','tab-gradebook','tab-submissions','tab-students'].includes(savedTab)){
       switchAdminTab(savedTab);
     }
@@ -1274,7 +1274,7 @@ async function grantRetake(){
 function checkAdminLogin(){
   const pwd=document.getElementById('adminPwd').value;
   if(pwd===CONFIG.adminPassword){
-    try{ localStorage.setItem('ieee_admin_auth','1'); }catch(e){}
+    try{ sessionStorage.setItem('ieee_admin_auth','1'); }catch(e){}
     document.getElementById('adminLoginError').innerHTML='';
     enterAdminPanel();
   } else {
@@ -1284,8 +1284,8 @@ function checkAdminLogin(){
 function adminLogout(){
   clearInterval(autoRefreshInterval);
   try{
-    localStorage.removeItem('ieee_admin_auth');
-    localStorage.removeItem('ieee_admin_tab');
+    sessionStorage.removeItem('ieee_admin_auth');
+    sessionStorage.removeItem('ieee_admin_tab');
   }catch(e){}
   document.getElementById('adminPwd').value='';
   if(new URLSearchParams(location.search).get('admin')==='1'){
@@ -1297,7 +1297,7 @@ function adminLogout(){
   }
 }
 function switchAdminTab(id){
-  try{ localStorage.setItem('ieee_admin_tab', id); }catch(e){}
+  try{ sessionStorage.setItem('ieee_admin_tab', id); }catch(e){}
   document.querySelectorAll('.admin-tab').forEach((t,i)=>{
     const ids=['tab-grades','tab-gradebook','tab-submissions','tab-students'];
     t.classList.toggle('active',ids[i]===id);
@@ -1602,7 +1602,7 @@ function startAutoRefresh(){
 
   if(new URLSearchParams(location.search).get('admin')==='1'){
     let isAdmin = false;
-    try{ isAdmin = localStorage.getItem('ieee_admin_auth') === '1'; }catch(e){}
+    try{ isAdmin = sessionStorage.getItem('ieee_admin_auth') === '1'; }catch(e){}
     if(isAdmin){
       enterAdminPanel();
     } else {
@@ -1613,7 +1613,7 @@ function startAutoRefresh(){
   }
 
   try{
-    const raw = localStorage.getItem('ieee_student');
+    const raw = sessionStorage.getItem('ieee_student');
     if(raw){
       const saved = JSON.parse(raw);
       if(saved && saved.id && saved.name){
