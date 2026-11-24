@@ -429,6 +429,10 @@ textarea{resize:vertical;min-height:70px;}
         <div class="form-group">
           <label>Assessment</label>
           <select id="gradeAssessment"><option value="">— Select Assessment —</option></select>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+            <label style="font-size:12px;color:var(--text-muted);white-space:nowrap;margin:0;">Tasks shown: 1 to</label>
+            <input type="number" id="maxTasksInput" value="20" min="1" max="20" style="width:70px;padding:4px 8px;font-size:13px;border:1px solid var(--border);border-radius:6px;" oninput="updateMaxTasks(this.value)"/>
+          </div>
         </div>
         <div class="form-group">
           <label>Grade</label>
@@ -502,10 +506,8 @@ const CONFIG = {
   adminPassword: 'KSA@2006',
   globalShowAfterExam: false, // default for questions that don't set their own flag
 
+  maxTasks: 20,  // Admin can change this — controls how many Task N entries appear (1 to this number)
   assessments: [
-    { id: 'week1-quiz', label: 'Week 1 Quiz' },
-    { id: 'midterm',    label: 'Midterm' },
-    { id: 'week2-quiz', label: 'Week 2 Quiz' },
     { id: 'task1',      label: 'Task 1' },
     { id: 'task2',      label: 'Task 2' },
     { id: 'task3',      label: 'Task 3' },
@@ -526,6 +528,9 @@ const CONFIG = {
     { id: 'task18',     label: 'Task 18' },
     { id: 'task19',     label: 'Task 19' },
     { id: 'task20',     label: 'Task 20' },
+    { id: 'week1-quiz', label: 'Week 1 Quiz' },
+    { id: 'midterm',    label: 'Midterm' },
+    { id: 'week2-quiz', label: 'Week 2 Quiz' },
     { id: 'final',      label: 'Final Exam' },
   ],
 
@@ -663,9 +668,15 @@ async function fetchAndMergeRoster() {
     const data = await res.json();
     if (data.students && data.students.length > 0) {
       data.students.forEach(s => {
-        if (!ACTIVE_ROSTER.find(r => r.id === s.id)) {
+        // Normalize both sides: strip leading zeros for comparison to avoid duplicates
+        // when Sheet strips leading zeros from IDs like 07174 → 7174
+        const normalizeId = id => String(id||'').trim().replace(/^0+/, '') || '0';
+        const dup = ACTIVE_ROSTER.find(r => normalizeId(r.id) === normalizeId(s.id));
+        if (!dup) {
           ACTIVE_ROSTER.push({ id: s.id, name: s.name });
         }
+        // If the Sheet version has leading zeros and the roster entry doesn't (or vice versa),
+        // prefer the version with leading zeros (from hardcoded roster)
       });
     }
   } catch(e) { /* fail silently — hardcoded roster still works */ }
@@ -1054,10 +1065,21 @@ function switchAdminTab(id){
   document.querySelectorAll('.admin-panel').forEach(p=>p.classList.toggle('active',p.id===id));
   if(id==='tab-gradebook') loadGradeBook();
 }
+function updateMaxTasks(val){
+  const n = Math.min(20, Math.max(1, parseInt(val)||1));
+  CONFIG.maxTasks = n;
+  populateAssessmentsDropdown();
+}
 function populateAssessmentsDropdown(){
   const sel=document.getElementById('gradeAssessment');
   sel.innerHTML='<option value="">— Select Assessment —</option>';
-  CONFIG.assessments.forEach(a=>{sel.innerHTML+=`<option value="${a.id}">${a.label}</option>`;});
+  const maxT = Number(CONFIG.maxTasks) || 20;
+  CONFIG.assessments.forEach(a=>{
+    // Skip task entries beyond the configured max
+    const taskMatch = a.id.match(/^task(\d+)$/);
+    if(taskMatch && parseInt(taskMatch[1]) > maxT) return;
+    sel.innerHTML+=`<option value="${a.id}">${a.label}</option>`;
+  });
 }
 function populateStudentDropdown(){
   const sel=document.getElementById('gradeStudent');
