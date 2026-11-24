@@ -452,20 +452,43 @@ function setGrade(body) {
 function deleteStudent(body) {
   const { studentId } = body;
   if (!studentId) return { error: 'Student ID required.' };
+  const normId = normalizeStudentId(studentId);
 
-  const sheet = getSheet('Students');
-  if (!sheet) return { error: 'Students sheet not found.' };
+  const lock = LockService.getScriptLock();
+  try { lock.waitLock(10000); } catch(e) { return { error: 'Server busy.' }; }
 
-  const data = sheet.getDataRange().getValues();
-  const h    = getHeaders(sheet);
+  try {
+    let totalDeleted = 0;
 
-  for (let i = 1; i < data.length; i++) {
-    if (String(data[i][h['ID']]).trim() === String(studentId).trim()) {
-      sheet.deleteRow(i + 1);
-      return { ok: true };
+    const deleteMatchingRows = (sheetName, colHeader) => {
+      const sheet = getSheet(sheetName);
+      if (!sheet || sheet.getLastRow() <= 1) return 0;
+      const data = sheet.getDataRange().getValues();
+      const h    = getHeaders(sheet);
+      const colIdx = h[colHeader];
+      if (colIdx === undefined) return 0;
+      let count = 0;
+      for (let i = data.length - 1; i >= 1; i--) {
+        if (normalizeStudentId(data[i][colIdx]) === normId) {
+          sheet.deleteRow(i + 1);
+          count++;
+        }
+      }
+      return count;
+    };
+
+    totalDeleted += deleteMatchingRows('Students', 'ID');
+    totalDeleted += deleteMatchingRows('Grades', 'Student ID');
+    totalDeleted += deleteMatchingRows('Submissions', 'Student ID');
+    totalDeleted += deleteMatchingRows('Retakes', 'Target');
+
+    if (totalDeleted === 0) {
+      return { error: `Student ID ${studentId} not found.` };
     }
+    return { ok: true, deletedRows: totalDeleted };
+  } finally {
+    lock.releaseLock();
   }
-  return { error: `Student ID ${studentId} not found.` };
 }
 
 // ───────────────────────────────────────────────────────────

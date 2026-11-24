@@ -669,25 +669,29 @@ function toast(msg,dur=3000){
   setTimeout(()=>t.classList.remove('show'),dur);
 }
 
-// Merged roster: starts with hardcoded list, extended from Sheet on load
+// Merged roster: starts with hardcoded list, synced from Sheet on load
 let ACTIVE_ROSTER = [...STUDENT_ROSTER];
+const normalizeStudentId = id => String(id||'').trim().replace(/^0+/, '') || '0';
 
 async function fetchAndMergeRoster() {
   try {
     const res = await fetch(`${CONFIG.appsScriptUrl}?action=getStudents&key=${encodeURIComponent(CONFIG.adminPassword)}`);
     const data = await res.json();
-    if (data.students && data.students.length > 0) {
+    if (Array.isArray(data.students)) {
+      const sheetRoster = [];
       data.students.forEach(s => {
-        // Normalize both sides: strip leading zeros for comparison to avoid duplicates
-        // when Sheet strips leading zeros from IDs like 07174 → 7174
-        const normalizeId = id => String(id||'').trim().replace(/^0+/, '') || '0';
-        const dup = ACTIVE_ROSTER.find(r => normalizeId(r.id) === normalizeId(s.id));
-        if (!dup) {
-          ACTIVE_ROSTER.push({ id: s.id, name: s.name });
+        const norm = normalizeStudentId(s.id);
+        if (!sheetRoster.find(r => normalizeStudentId(r.id) === norm)) {
+          // Prefer leading-zero ID from STUDENT_ROSTER if present
+          const preset = STUDENT_ROSTER.find(r => normalizeStudentId(r.id) === norm);
+          sheetRoster.push({ id: preset ? preset.id : String(s.id).trim(), name: s.name });
         }
-        // If the Sheet version has leading zeros and the roster entry doesn't (or vice versa),
-        // prefer the version with leading zeros (from hardcoded roster)
       });
+      ACTIVE_ROSTER = sheetRoster;
+      if (currentStudent && !ACTIVE_ROSTER.find(r => normalizeStudentId(r.id) === normalizeStudentId(currentStudent.id))) {
+        logout();
+        return;
+      }
       if (document.getElementById('page-admin').classList.contains('active')) {
         populateStudentDropdown();
         populateRetakeDropdowns();
@@ -1324,11 +1328,29 @@ async function saveGrade(){
   btn.disabled=false;btn.textContent='Save Grade';
 }
 async function deleteStudent(id, name){
-  if(!confirm(`Remove "${name}" (ID: ${id})?\nThis cannot be undone.`)) return;
+  if(!confirm(`Remove "${name}" (ID: ${id}) and ALL their grades/submissions?\nThis cannot be undone.`)) return;
   try{
     const res=await fetch(CONFIG.appsScriptUrl,{method:'POST',body:JSON.stringify({action:'deleteStudent',studentId:id,adminKey:CONFIG.adminPassword})});
     const data=await res.json();
-    if(data.ok){ toast(`${name} removed.`); loadStudentList(); populateStudentDropdown(); }
+    if(data.ok){
+      const norm = normalizeStudentId(id);
+      ACTIVE_ROSTER = ACTIVE_ROSTER.filter(s => normalizeStudentId(s.id) !== norm);
+      gradeBookData = null;
+      try{
+        localStorage.removeItem('submitted_' + id);
+        Object.keys(localStorage).forEach(k => {
+          if(k.startsWith(`quiz_state_${id}_`) || k.startsWith(`active_retake_${id}_`) || k.startsWith(`retake_used_${id}_`)){
+            localStorage.removeItem(k);
+          }
+        });
+      }catch(e){}
+      toast(`${name} and all their records removed.`);
+      loadStudentList();
+      populateStudentDropdown();
+      populateRetakeDropdowns();
+      loadSubmissions();
+      if(document.getElementById('tab-gradebook').classList.contains('active')) loadGradeBook();
+    }
     else{ alert(data.error||'Error removing student.'); }
   }catch(e){ alert('Connection failed.'); }
 }
@@ -1341,7 +1363,17 @@ async function addStudent(){
   try{
     const res=await fetch(CONFIG.appsScriptUrl,{method:'POST',body:JSON.stringify({action:'addStudent',name,studentId:id,email:'',adminKey:CONFIG.adminPassword})});
     const data=await res.json();
-    if(data.ok){msgEl.innerHTML='<div class="alert alert-success">Student added.</div>';document.getElementById('newStudentName').value='';document.getElementById('newStudentId').value='';loadStudentList();}
+    if(data.ok){
+      msgEl.innerHTML='<div class="alert alert-success">Student added.</div>';
+      document.getElementById('newStudentName').value='';
+      document.getElementById('newStudentId').value='';
+      if(!ACTIVE_ROSTER.find(s => normalizeStudentId(s.id) === normalizeStudentId(id))){
+        ACTIVE_ROSTER.push({id, name});
+      }
+      populateStudentDropdown();
+      populateRetakeDropdowns();
+      loadStudentList();
+    }
     else{msgEl.innerHTML=`<div class="alert alert-error">${data.error||'Error.'}</div>`;}
   }catch(e){msgEl.innerHTML='<div class="alert alert-error">Connection failed.</div>';}
 }
