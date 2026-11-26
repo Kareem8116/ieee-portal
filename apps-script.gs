@@ -254,24 +254,48 @@ function getStudentGrades(studentId) {
   const subsSheet = getSheet('Submissions');
   const quizGrades = [];
   const submissionsByTitle = {};
+  const submissionDetails = {};
   if (subsSheet && subsSheet.getLastRow() > 1) {
     const data = subsSheet.getDataRange().getValues();
     const h    = getHeaders(subsSheet);
-    data.slice(1).forEach(row => {
-      if (normalizeStudentId(row[h['Student ID']]) === normId) {
-        const title = String(row[h['Quiz Title']] || 'Quiz').trim();
-        const subMs = row[h['Submitted At']] ? new Date(row[h['Submitted At']]).getTime() : 0;
-        if (!submissionsByTitle[title] || subMs > submissionsByTitle[title]) {
-          submissionsByTitle[title] = subMs;
-        }
-        quizGrades.push({
-          assessment: title,
-          grade:      row[h['Score']],
-          maxGrade:   row[h['Max Grade']],
-          date:       row[h['Submitted At']] ? new Date(row[h['Submitted At']]).toLocaleDateString('en-GB') : '',
-          notes:      `${row[h['Correct Answers']]} / ${row[h['Total Questions']]} correct`,
-        });
+    const attemptCounts = {};
+    const studentRows = data.slice(1).filter(row => normalizeStudentId(row[h['Student ID']]) === normId);
+    studentRows.forEach(row => {
+      const title = String(row[h['Quiz Title']] || 'Quiz').trim();
+      attemptCounts[title] = (attemptCounts[title] || 0) + 1;
+    });
+    const seenCounts = {};
+    studentRows.forEach(row => {
+      const title = String(row[h['Quiz Title']] || 'Quiz').trim();
+      seenCounts[title] = (seenCounts[title] || 0) + 1;
+      const attemptNum = seenCounts[title];
+      const totalAttempts = attemptCounts[title];
+      const attemptLabel = totalAttempts > 1 ? `Attempt ${attemptNum} of ${totalAttempts}` : '1 attempt';
+
+      const subMs = row[h['Submitted At']] ? new Date(row[h['Submitted At']]).getTime() : 0;
+      if (!submissionsByTitle[title] || subMs > submissionsByTitle[title]) {
+        submissionsByTitle[title] = subMs;
       }
+      const ansRaw = h['Answers JSON'] !== undefined ? String(row[h['Answers JSON']] || '') : '';
+      if (ansRaw) {
+        try {
+          submissionDetails[title] = {
+            score:          Number(row[h['Score']] || 0),
+            maxGrade:       Number(row[h['Max Grade']] || 0),
+            correct:        Number(row[h['Correct Answers']] || 0),
+            totalQuestions: Number(row[h['Total Questions']] || 0),
+            timeTaken:      Number(row[h['Time Taken (s)']] || 0),
+            answers:        JSON.parse(ansRaw),
+          };
+        } catch(e) {}
+      }
+      quizGrades.push({
+        assessment: title,
+        grade:      row[h['Score']],
+        maxGrade:   row[h['Max Grade']],
+        date:       row[h['Submitted At']] ? new Date(row[h['Submitted At']]).toLocaleDateString('en-GB') : '',
+        notes:      `${row[h['Correct Answers']]} / ${row[h['Total Questions']]} correct • ${attemptLabel}`,
+      });
     });
   }
 
@@ -321,6 +345,7 @@ function getStudentGrades(studentId) {
     student: { id: studentId, name: studentName || 'Student' },
     grades:  [...quizGrades, ...manualGrades],
     submissionsByTitle,
+    submissionDetails,
     retakeGrants,
   };
 }
