@@ -667,7 +667,7 @@ const CONFIG = {
 
   // Available exams shown in dashboard
   exams: [
-    { id:'switching-quiz-1', label:'Switching Quiz 1', duration:30, maxGrade:30, open:true, showAnswers:false },
+    { id:'switching-quiz-1', label:'Switching Quiz 1', duration:30, maxGrade:30, open:true, showAnswers:true },
   ],
 };
 
@@ -894,6 +894,7 @@ let acTimer = null;
 let submitted = false;
 let currentExam = null;
 let autoRefreshInterval = null;
+let serverSubDetails = {};
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ROUTING
@@ -978,6 +979,7 @@ function logout(){
   teardownAntiCheat();
   currentStudent = null;
   currentExam = null;
+  serverSubDetails = {};
   try{ sessionStorage.removeItem('ieee_student'); }catch(e){}
   document.getElementById('loginId').value = '';
   document.getElementById('loginError').innerHTML = '';
@@ -1016,6 +1018,9 @@ function renderExams(){
     const statusClass = !exam.open ? 'status-locked' : done ? 'status-submitted' : 'status-open';
     const statusLabel = !exam.open ? 'Locked' : done ? 'Submitted' : hasActiveState ? 'In Progress' : 'Open';
     const canStart = exam.open && !done;
+    const hasLocalDetail = done && !!localStorage.getItem(`sub_detail_${currentStudent.id}_${exam.id}`);
+    const hasServerDetail = done && !!(serverSubDetails[exam.label]);
+    const canReview = done && exam.showAnswers && (hasLocalDetail || hasServerDetail);
 
     return `<div class="exam-card">
       <div class="exam-info">
@@ -1025,6 +1030,7 @@ function renderExams(){
       <div style="display:flex;align-items:center;gap:10px;">
         <span class="exam-status ${statusClass}">${statusLabel}</span>
         ${canStart ? `<button class="btn btn-primary btn-sm" onclick="startExam('${exam.id}')">${hasActiveState?'Resume':'Start'}</button>` : ''}
+        ${canReview ? `<button class="btn btn-outline btn-sm" onclick="viewExamReview('${exam.id}')">View Answers</button>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -1032,6 +1038,7 @@ function renderExams(){
 
 function syncServerRetakes(data){
   if(!currentStudent || !data) return;
+  if(data.submissionDetails) serverSubDetails = data.submissionDetails;
   const subsByTitle = data.submissionsByTitle || {};
   const grants = data.retakeGrants || {};
   const subKey = 'submitted_' + currentStudent.id;
@@ -1342,6 +1349,11 @@ async function submitQuiz(autoSubmit=false){
     const key='submitted_'+currentStudent.id;
     const done=JSON.parse(localStorage.getItem(key)||'[]');
     if(!done.includes(currentExam.id)){done.push(currentExam.id);localStorage.setItem(key,JSON.stringify(done));}
+    try{
+      localStorage.setItem(`sub_detail_${currentStudent.id}_${currentExam.id}`, JSON.stringify({
+        score, maxGrade, correct, totalQuestions: QUESTIONS.length, timeTaken, answers
+      }));
+    }catch(e){}
   }
 
   showPage('page-result');
@@ -1390,6 +1402,29 @@ function renderResult(correct,score,maxGrade,timeTaken){
     </div>`;
 }
 
+function viewExamReview(examId){
+  const exam = (CONFIG.exams||[]).find(e=>e.id===examId);
+  if(!exam) return;
+  let detail = null;
+  try{
+    const raw = localStorage.getItem(`sub_detail_${currentStudent.id}_${examId}`);
+    if(raw) detail = JSON.parse(raw);
+  }catch(e){}
+  if(!detail && serverSubDetails[exam.label]){
+    detail = serverSubDetails[exam.label];
+  }
+  if(!detail){
+    toast('Answer details are not available for this attempt.');
+    return;
+  }
+  currentExam = exam;
+  answers = detail.answers || {};
+  submitted = true;
+  showPage('page-result');
+  renderResult(detail.correct, detail.score, detail.maxGrade, detail.timeTaken || 0);
+  renderReview();
+}
+
 function renderReview(){
   const sec=document.getElementById('reviewSection');
   // Check per-exam showAnswers flag first, then fall back to per-question flag
@@ -1401,10 +1436,13 @@ function renderReview(){
   const letters=['A','B','C','D','E'];
   let html=`<div class="card"><div class="card-title">Answer Review</div><div class="card-sub">${reviewable.length} question(s) available for review</div>`;
   reviewable.forEach((q,i)=>{
-    const userAns=answers[q.id];
-    const isCorrect=q.type==='mcq'?userAns===q.correct:userAns===q.correct;
+    const rawAns=answers[q.id];
+    const hasAns=rawAns!==undefined && rawAns!==null && rawAns!=='';
+    const userAns=q.type==='mcq'?(hasAns?Number(rawAns):undefined):(hasAns?(rawAns===true||rawAns==='true'):undefined);
+    const isCorrect=hasAns && userAns===q.correct;
+    const statusTxt=!hasAns?'Unanswered':isCorrect?'Correct':'Incorrect';
     html+=`<div style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border);">
-      <div class="q-num">Question ${QUESTIONS.indexOf(q)+1} — ${isCorrect?'Correct':'Incorrect'}</div>
+      <div class="q-num">Question ${QUESTIONS.indexOf(q)+1} — ${statusTxt}</div>
       <div class="q-text" style="margin-bottom:12px;">${q.text}</div>`;
     if(q.type==='mcq'){
       q.options.forEach((o,oi)=>{
