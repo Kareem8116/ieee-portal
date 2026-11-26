@@ -277,17 +277,22 @@ function getStudentGrades(studentId) {
         submissionsByTitle[title] = subMs;
       }
       const ansRaw = h['Answers JSON'] !== undefined ? String(row[h['Answers JSON']] || '') : '';
+      let detailIdx = undefined;
       if (ansRaw) {
         try {
-          submissionDetails[title] = {
+          if (!submissionDetails[title]) submissionDetails[title] = [];
+          detailIdx = submissionDetails[title].length;
+          submissionDetails[title].push({
+            attemptNum,
             score:          Number(row[h['Score']] || 0),
             maxGrade:       Number(row[h['Max Grade']] || 0),
             correct:        Number(row[h['Correct Answers']] || 0),
             totalQuestions: Number(row[h['Total Questions']] || 0),
             timeTaken:      Number(row[h['Time Taken (s)']] || 0),
+            submittedAt:    row[h['Submitted At']] ? new Date(row[h['Submitted At']]).toLocaleString('en-GB') : '',
             answers:        JSON.parse(ansRaw),
-          };
-        } catch(e) {}
+          });
+        } catch(e) { detailIdx = undefined; }
       }
       quizGrades.push({
         assessment: title,
@@ -295,6 +300,7 @@ function getStudentGrades(studentId) {
         maxGrade:   row[h['Max Grade']],
         date:       row[h['Submitted At']] ? new Date(row[h['Submitted At']]).toLocaleDateString('en-GB') : '',
         notes:      `${row[h['Correct Answers']]} / ${row[h['Total Questions']]} correct • ${attemptLabel}`,
+        attemptIdx: detailIdx,
       });
     });
   }

@@ -456,6 +456,7 @@ textarea{resize:vertical;min-height:70px;}
 ══════════════════════════════════════ -->
 <div class="page" id="page-result">
   <div class="container">
+    <div id="attemptSelector" style="margin-bottom:14px;"></div>
     <div class="result-hero" id="resultHero"></div>
     <div id="reviewSection"></div>
     <div style="text-align:center;margin-top:16px;">
@@ -1018,8 +1019,8 @@ function renderExams(){
     const statusClass = !exam.open ? 'status-locked' : done ? 'status-submitted' : 'status-open';
     const statusLabel = !exam.open ? 'Locked' : done ? 'Submitted' : hasActiveState ? 'In Progress' : 'Open';
     const canStart = exam.open && !done;
-    const hasLocalDetail = done && !!localStorage.getItem(`sub_detail_${currentStudent.id}_${exam.id}`);
-    const hasServerDetail = done && !!(serverSubDetails[exam.label]);
+    const hasLocalDetail = done && (!!localStorage.getItem(`sub_details_${currentStudent.id}_${exam.id}`) || !!localStorage.getItem(`sub_detail_${currentStudent.id}_${exam.id}`));
+    const hasServerDetail = done && !!(serverSubDetails[exam.label] && (!Array.isArray(serverSubDetails[exam.label]) || serverSubDetails[exam.label].length > 0));
     const canReview = done && exam.showAnswers && (hasLocalDetail || hasServerDetail);
 
     return `<div class="exam-card">
@@ -1119,12 +1120,19 @@ function renderGrades(grades){
     else if(pct>=80) gClass='grade-B';
     else if(pct>=70) gClass='grade-C';
     else if(pct>=60) gClass='grade-D';
+    let reviewBtn = '';
+    if(g.attemptIdx !== undefined){
+      const matchExam = (CONFIG.exams||[]).find(e=>e.label===g.assessment);
+      if(matchExam && matchExam.showAnswers){
+        reviewBtn = ` <button class="btn btn-outline btn-sm" style="padding:3px 9px;font-size:11px;margin-left:6px;" onclick="viewExamReview('${matchExam.id}',${g.attemptIdx})">View</button>`;
+      }
+    }
     return `<tr>
       <td><strong>${g.assessment}</strong></td>
       <td>${g.grade} / ${g.maxGrade}</td>
       <td><span class="grade-pill ${gClass}">${pct}%</span></td>
       <td style="font-size:12px;color:var(--text-muted);">${g.date||''}</td>
-      <td style="font-size:12px;">${g.notes||'—'}</td>
+      <td style="font-size:12px;">${g.notes||'—'}${reviewBtn}</td>
     </tr>`;
   }).join('');
 
@@ -1350,12 +1358,19 @@ async function submitQuiz(autoSubmit=false){
     const done=JSON.parse(localStorage.getItem(key)||'[]');
     if(!done.includes(currentExam.id)){done.push(currentExam.id);localStorage.setItem(key,JSON.stringify(done));}
     try{
-      localStorage.setItem(`sub_detail_${currentStudent.id}_${currentExam.id}`, JSON.stringify({
-        score, maxGrade, correct, totalQuestions: QUESTIONS.length, timeTaken, answers
-      }));
+      const entry = { score, maxGrade, correct, totalQuestions: QUESTIONS.length, timeTaken, answers };
+      localStorage.setItem(`sub_detail_${currentStudent.id}_${currentExam.id}`, JSON.stringify(entry));
+      const arrKey = `sub_details_${currentStudent.id}_${currentExam.id}`;
+      let arr = [];
+      try{ arr = JSON.parse(localStorage.getItem(arrKey) || '[]'); }catch(e){ arr = []; }
+      if(!Array.isArray(arr)) arr = [];
+      entry.attemptNum = arr.length + 1;
+      arr.push(entry);
+      localStorage.setItem(arrKey, JSON.stringify(arr));
     }catch(e){}
   }
 
+  document.getElementById('attemptSelector').innerHTML = '';
   showPage('page-result');
   renderResult(correct,score,maxGrade,timeTaken);
   renderReview();
@@ -1402,21 +1417,46 @@ function renderResult(correct,score,maxGrade,timeTaken){
     </div>`;
 }
 
-function viewExamReview(examId){
+function viewExamReview(examId, attemptIdx){
   const exam = (CONFIG.exams||[]).find(e=>e.id===examId);
   if(!exam) return;
-  let detail = null;
-  try{
-    const raw = localStorage.getItem(`sub_detail_${currentStudent.id}_${examId}`);
-    if(raw) detail = JSON.parse(raw);
-  }catch(e){}
-  if(!detail && serverSubDetails[exam.label]){
-    detail = serverSubDetails[exam.label];
+  let attemptsList = [];
+  const srv = serverSubDetails[exam.label];
+  if(Array.isArray(srv) && srv.length > 0){
+    attemptsList = srv;
+  } else if(srv && !Array.isArray(srv)){
+    attemptsList = [srv];
+  } else {
+    try{
+      const rawArr = localStorage.getItem(`sub_details_${currentStudent.id}_${examId}`);
+      if(rawArr) attemptsList = JSON.parse(rawArr);
+      if(!Array.isArray(attemptsList) || attemptsList.length === 0){
+        const rawSingle = localStorage.getItem(`sub_detail_${currentStudent.id}_${examId}`);
+        if(rawSingle) attemptsList = [JSON.parse(rawSingle)];
+      }
+    }catch(e){}
   }
-  if(!detail){
+  if(!attemptsList || attemptsList.length === 0){
     toast('Answer details are not available for this attempt.');
     return;
   }
+  const idx = (attemptIdx !== undefined && attemptIdx >= 0 && attemptIdx < attemptsList.length)
+    ? attemptIdx
+    : attemptsList.length - 1;
+  const detail = attemptsList[idx];
+
+  const selEl = document.getElementById('attemptSelector');
+  if(attemptsList.length > 1){
+    selEl.innerHTML = `<div class="card" style="padding:14px 18px;margin-bottom:0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <span style="font-size:13px;font-weight:700;color:var(--ieee-dark);">Attempts (${attemptsList.length}):</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${attemptsList.map((a,i)=>`<button class="btn btn-sm ${i===idx?'btn-primary':'btn-outline'}" onclick="viewExamReview('${examId}',${i})">Attempt ${a.attemptNum||(i+1)} (${a.score}/${a.maxGrade})</button>`).join('')}
+      </div>
+    </div>`;
+  } else {
+    selEl.innerHTML = '';
+  }
+
   currentExam = exam;
   answers = detail.answers || {};
   submitted = true;
