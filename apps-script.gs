@@ -3,9 +3,9 @@
 //  Apps Script Backend
 //  
 //  SHEET STRUCTURE:
-//    Sheet "Students"  : ID | Name | Email
-//    Sheet "Grades"    : Student ID | Assessment | Grade | Max Grade | Date | Notes
-//    Sheet "Submissions": Name | Student ID | Email | Score | Max Grade | Total Qs | Correct | Time Taken | Tab Switches | Submitted At | Quiz Title
+//    Sheet "Students"   : ID | Name | Email
+//    Sheet "Grades"     : Student ID | Assessment | Grade | Max Grade | Date | Notes
+//    Sheet "Submissions": Name | Student ID | Email | Quiz Title | Score | Max Grade | Total Questions | Correct Answers | Time Taken (s) | Tab Switches | Submitted At | Answers JSON
 // ═══════════════════════════════════════════════════════════
 
 const SPREADSHEET_ID = '1_V9NN1yTY_AmoZLx6N3NtI3FUFYDbbpclgeir9ZpoHw';
@@ -76,8 +76,8 @@ function setupSheets() {
   let subsSheet = ss.getSheetByName('Submissions');
   if (!subsSheet) {
     subsSheet = ss.insertSheet('Submissions');
-    subsSheet.appendRow(['Name', 'Student ID', 'Email', 'Quiz Title', 'Score', 'Max Grade', 'Total Questions', 'Correct Answers', 'Time Taken (s)', 'Tab Switches', 'Submitted At']);
-    subsSheet.getRange(1, 1, 1, 11).setFontWeight('bold')
+    subsSheet.appendRow(['Name', 'Student ID', 'Email', 'Quiz Title', 'Score', 'Max Grade', 'Total Questions', 'Correct Answers', 'Time Taken (s)', 'Tab Switches', 'Submitted At', 'Answers JSON']);
+    subsSheet.getRange(1, 1, 1, 12).setFontWeight('bold')
       .setBackground('#003865').setFontColor('#ffffff');
   }
 
@@ -345,6 +345,7 @@ function getSubmissions() {
     timeTaken:      row[h['Time Taken (s)']],
     tabSwitchCount: row[h['Tab Switches']],
     submittedAt:    row[h['Submitted At']] ? new Date(row[h['Submitted At']]).toLocaleString('en-GB') : '',
+    answersJson:    h['Answers JSON'] !== undefined ? String(row[h['Answers JSON']] || '') : '',
   })).reverse(); // newest first
   return { submissions };
 }
@@ -373,6 +374,7 @@ function submitQuiz(body) {
       body.timeTaken      || 0,
       body.tabSwitchCount || 0,
       now,
+      body.answersJson    || '',
     ]);
     // Format submitted-at column as text
     const lastRow = sheet.getLastRow();
