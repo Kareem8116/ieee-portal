@@ -565,6 +565,7 @@ textarea{resize:vertical;min-height:70px;}
           <button class="btn btn-primary" id="grantRetakeBtn" onclick="grantRetake()">Open Retake (1x)</button>
         </div>
       </div>
+      <div id="showAnswersControl"></div>
       <div class="refresh-row">
         <div style="font-weight:600;">Quiz Submissions</div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
@@ -1422,6 +1423,7 @@ function enterAdminPanel(){
   populateAssessmentsDropdown();
   populateStudentDropdown();
   populateRetakeDropdowns();
+  renderShowAnswersControl();
   loadSubmissions();
   loadStudentList();
   startAutoRefresh();
@@ -1634,7 +1636,32 @@ async function loadSubmissions(){
   }catch(e){content.innerHTML='<div class="alert alert-error">Failed to load.</div>';}
 }
 
+function renderShowAnswersControl(){
+  const el = document.getElementById('showAnswersControl');
+  if(!el) return;
+  if(!CONFIG.exams || CONFIG.exams.length === 0){
+    el.innerHTML = '';
+    return;
+  }
+  el.innerHTML = `<div class="card" style="margin-bottom:16px;">
+    <div class="card-title">Show Answers to Students</div>
+    <div class="card-sub">Toggle whether students can see the answer review after submitting</div>
+    ${CONFIG.exams.map(ex=>{
+      const checked = ex.showAnswers ? 'checked' : '';
+      return `<div class="show-toggle-row">
+        <span class="tgl-label">${ex.label}</span>
+        <label class="toggle-switch">
+          <input type="checkbox" ${checked} onchange="toggleShowAnswers('${ex.id}',this.checked)"/>
+          <span class="toggle-track"></span>
+          <span class="toggle-thumb"></span>
+        </label>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
 function renderSubmissions(){
+  renderShowAnswersControl();
   const content=document.getElementById('submissionsContent');
   if(!submissionsData || submissionsData.length===0){content.innerHTML='<div class="alert alert-info">No submissions yet.</div>';return;}
   const sortMode = document.getElementById('subsSort') ? document.getElementById('subsSort').value : 'latest';
@@ -1651,26 +1678,6 @@ function renderSubmissions(){
     subs.sort((a,b)=>(parseInt(a.studentId,10)||0)-(parseInt(b.studentId,10)||0) || String(a.studentId||'').localeCompare(String(b.studentId||'')));
   }
 
-  // Build show-answers toggles for all active exams
-  let togglesHtml = '';
-  if(CONFIG.exams && CONFIG.exams.length > 0){
-    togglesHtml = `<div class="card" style="margin-bottom:16px;">
-      <div class="card-title">Show Answers to Students</div>
-      <div class="card-sub">Toggle whether students can see the answer review after submitting</div>
-      ${CONFIG.exams.map(ex=>{
-        const checked = ex.showAnswers ? 'checked' : '';
-        return `<div class="show-toggle-row">
-          <span class="tgl-label">${ex.label}</span>
-          <label class="toggle-switch">
-            <input type="checkbox" ${checked} onchange="toggleShowAnswers('${ex.id}',this.checked)"/>
-            <span class="toggle-track"></span>
-            <span class="toggle-thumb"></span>
-          </label>
-        </div>`;
-      }).join('')}
-    </div>`;
-  }
-
   const tableHtml = `<div class="table-wrap"><table class="subs-table">
     <thead><tr><th>#</th><th>Name</th><th>ID</th><th>Quiz</th><th>Score</th><th>%</th><th>Time</th><th>Switches</th><th>Submitted</th><th></th></tr></thead>
     <tbody>${subs.map((s,i)=>{const pct=s.maxGrade?Math.round((s.score/s.maxGrade)*100):'-';const m=Math.floor((s.timeTaken||0)/60),sec=(s.timeTaken||0)%60;
@@ -1679,7 +1686,7 @@ function renderSubmissions(){
       return `<tr><td>${i+1}</td><td>${s.name}</td><td>${s.studentId}</td><td>${s.quizTitle||''}</td><td><strong>${s.score}/${s.maxGrade}</strong></td><td>${pct}%</td><td>${m}:${sec<10?'0':''}${sec}</td><td style="color:${s.tabSwitchCount>0?'var(--danger)':'inherit'}">${s.tabSwitchCount||0}</td><td style="font-size:11px;">${s.submittedAt||''}</td><td>${detailBtn}</td></tr>`;
     }).join('')}</tbody></table></div>`;
 
-  content.innerHTML = togglesHtml + tableHtml;
+  content.innerHTML = tableHtml;
 }
 
 function toggleShowAnswers(examId, val){
