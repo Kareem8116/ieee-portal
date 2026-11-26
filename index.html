@@ -653,8 +653,7 @@ const CONFIG = {
 
   // Available exams shown in dashboard
   exams: [
-    // Add exams here when ready
-    // Example: { id:'week3-quiz', label:'Week 3 Quiz', duration:30, maxGrade:30, open:true, showAnswers:false }
+    { id:'switching-quiz-1', label:'Switching Quiz 1', duration:30, maxGrade:30, open:true, showAnswers:false },
   ],
 };
 
@@ -696,44 +695,176 @@ const STUDENT_ROSTER = [
 const QUESTIONS = [
   {
     id:1, type:'mcq',
-    text:'What does OSI stand for?',
-    options:['Open Systems Interconnection','Open Software Interface','Operating System Interface','Open Signal Interchange'],
-    correct:0,
-    explanation:'OSI stands for Open Systems Interconnection, a conceptual framework for network communication.',
-    showAfterExam:true,
+    text:'Which command displays the MAC address table on a Cisco switch?',
+    options:['show ip route','show mac-address-table','show vlan brief','show interfaces trunk'],
+    correct:1,
   },
   {
     id:2, type:'mcq',
-    text:'How many layers does the OSI model have?',
-    options:['4','5','6','7'],
-    correct:3,
-    explanation:'The OSI model has 7 layers: Physical, Data Link, Network, Transport, Session, Presentation, Application.',
-    showAfterExam:true,
+    text:'How many bits are in a MAC address?',
+    options:['32','64','48','128'],
+    correct:2,
   },
   {
-    id:3, type:'tf',
-    text:'TCP is a connectionless protocol.',
-    correct:false,
-    explanation:'TCP is connection-oriented — it establishes a connection before transmitting data.',
-    showAfterExam:false,
+    id:3, type:'mcq',
+    text:'By default, a dynamic CAM table entry expires after how long of inactivity?',
+    options:['30 seconds','60 seconds','1 hour','300 seconds (5 minutes)'],
+    correct:3,
   },
   {
     id:4, type:'mcq',
-    text:'Which layer of the OSI model is responsible for routing?',
-    options:['Data Link','Network','Transport','Session'],
-    correct:1,
-    explanation:'The Network layer (Layer 3) handles logical addressing and routing between networks.',
-    showAfterExam:true,
+    text:'Which device floods every frame out of all of its ports?',
+    options:['Hub','Switch','Router','Layer 3 switch'],
+    correct:0,
   },
   {
-    id:5, type:'tf',
-    text:'UDP provides reliable, ordered delivery of data.',
-    correct:false,
-    explanation:'UDP is unreliable and unordered — it sends packets without guaranteeing delivery or sequence.',
-    showAfterExam:true,
+    id:5, type:'mcq',
+    text:'Which Windows command shows the Physical Address (MAC) of an adapter?',
+    options:['ping','tracert','ipconfig /all','netstat'],
+    correct:2,
   },
-  // ADD MORE QUESTIONS HERE:
-  // { id:6, type:'mcq', text:'...', options:['A','B','C','D'], correct:0, explanation:'...', showAfterExam:true },
+  {
+    id:6, type:'mcq',
+    text:'Which rack houses the Core Switch, routers, and servers in the Data Center / Server Room?',
+    options:['IDF','MDF','Patch panel','Access closet'],
+    correct:1,
+  },
+  {
+    id:7, type:'mcq',
+    text:'The first 24 bits of a MAC address (the OUI) identify the:',
+    options:['Unique NIC serial number','VLAN','Vendor / manufacturer','Switch port'],
+    correct:2,
+  },
+  {
+    id:8, type:'mcq',
+    text:'Which duplex mode requires CSMA/CD to detect collisions and coordinate turns?',
+    options:['Full duplex','Half duplex','Both','Neither'],
+    correct:1,
+  },
+  {
+    id:9, type:'mcq',
+    text:'Which port type is typically used (often copper or fiber SFP) to connect a switch to another switch?',
+    options:['Access port','Console port','Uplink port','Management port'],
+    correct:2,
+  },
+  {
+    id:10, type:'mcq',
+    text:'What is the role of the Distribution layer in a 3-tier design?',
+    options:['Connect end-user PCs directly','Aggregate each building\'s Access switches and save long-haul fiber to the Core','Replace the Core completely','Act as a hub for the Access layer'],
+    correct:1,
+  },
+  {
+    id:11, type:'mcq',
+    text:'A Collapsed Core (2-tier) design merges which two layers?',
+    options:['Access + Distribution','Access + Core','Core + Distribution','All three layers'],
+    correct:2,
+  },
+  {
+    id:12, type:'mcq',
+    text:'Which design connects every Leaf to every Spine in a full mesh using Layer 3 routed ports?',
+    options:['StackWise','Collapsed Core','Spine & Leaf','Hub-and-spoke'],
+    correct:2,
+  },
+  {
+    id:13, type:'mcq',
+    text:'What does StackWise / VSS do?',
+    options:['Splits one switch into many virtual hubs','Combines multiple physical switches into one logical switch with shared management','Converts a switch into a router','Disables MAC learning'],
+    correct:1,
+  },
+  {
+    id:14, type:'mcq',
+    text:'Where are Access Switches that connect directly to employee PCs usually placed?',
+    options:['In the MDF only','In the IDF on each floor','Inside the servers','At the ISP'],
+    correct:1,
+  },
+  {
+    id:15, type:'mcq',
+    text:'A switch receives a frame whose destination MAC is NOT in the CAM table. What does it do?',
+    options:['Drops the frame','Floods it out all ports except the one it arrived on','Sends it back to the sender','Sends it only to the router'],
+    correct:1,
+  },
+  {
+    id:16, type:'mcq',
+    text:'Which is an advantage of full duplex?',
+    options:['It needs CSMA/CD','It shares a single wire pair','It causes occasional collisions','Zero collisions and doubled effective throughput'],
+    correct:3,
+  },
+  {
+    id:17, type:'mcq',
+    text:'A PC with a 1 Gbps NIC and a Cat6 cable connects to a switch port manually set to 10 Mbps. At what speed does the link run?',
+    options:['1 Gbps','100 Mbps','10 Mbps','The link will not come up'],
+    correct:2,
+  },
+  {
+    id:18, type:'mcq',
+    text:'Which of these is a valid speed to throttle a 100 Mbps port down to?',
+    options:['70 Mbps','55 Mbps','99 Mbps','10 Mbps'],
+    correct:3,
+  },
+  {
+    id:19, type:'mcq',
+    text:'A company in a single building needs a simple, low-cost design for a small-to-medium network. Which design fits best?',
+    options:['3-tier with Distribution switches','2-tier Collapsed Core','Spine & Leaf with Leaf-to-Leaf links','A hub-based network'],
+    correct:1,
+  },
+  {
+    id:20, type:'mcq',
+    text:'An engineer connects Stack 1 on switch A to Stack 1 on switch B (1-to-1) when cabling a StackWise stack. What is wrong?',
+    options:['Nothing, this is correct','Stack ports must be cross-connected (Stack 1 to Stack 2)','Stack cables must be fiber','Stack cables carry power only'],
+    correct:1,
+  },
+  {
+    id:21, type:'mcq',
+    text:'A data center wants to eliminate STP and use Layer 3 routed links. Which design and rule apply?',
+    options:['Spine & Leaf; never connect Leaf-to-Leaf or Spine-to-Spine','Spine & Leaf; never connect Leaf-to-Spine','Collapsed Core; never connect Core-to-Access','3-tier; never connect Distribution-to-Core'],
+    correct:0,
+  },
+  {
+    id:22, type:'mcq',
+    text:'A campus has several buildings with long fiber runs back to the Core. Which design reduces long-haul fiber, and what is the maximum number of Distribution switches per building?',
+    options:['3-tier; max 2','2-tier; max 2','3-tier; max 4','Spine & Leaf; max 1'],
+    correct:0,
+  },
+  {
+    id:23, type:'tf',
+    text:'A Layer 2 switch makes its forwarding decisions based on IP addresses.',
+    correct:false,
+  },
+  {
+    id:24, type:'tf',
+    text:'Full duplex is the default on switch ports and is auto-negotiated when a PC connects.',
+    correct:true,
+  },
+  {
+    id:25, type:'tf',
+    text:'A hub keeps a MAC address table to forward frames to the correct port.',
+    correct:false,
+  },
+  {
+    id:26, type:'tf',
+    text:'RSTP (802.1w) reduces failover time from about 50 seconds to sub-second.',
+    correct:true,
+  },
+  {
+    id:27, type:'tf',
+    text:'In a Spine & Leaf design, Spine-to-Spine links are recommended for redundancy.',
+    correct:false,
+  },
+  {
+    id:28, type:'tf',
+    text:'Routed Access uses IP routing between layers and avoids Layer 2 STP issues.',
+    correct:true,
+  },
+  {
+    id:29, type:'tf',
+    text:'Using a higher-category cable can raise a port\'s speed above what the port is configured for.',
+    correct:false,
+  },
+  {
+    id:30, type:'tf',
+    text:'The main purpose of adding a Distribution layer is to aggregate Access switches and reduce long fiber runs to the Core.',
+    correct:true,
+  },
 ];
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
