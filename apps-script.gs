@@ -11,7 +11,7 @@
 const SPREADSHEET_ID = '1_V9NN1yTY_AmoZLx6N3NtI3FUFYDbbpclgeir9ZpoHw';
 const ADMIN_KEY      = 'KSA@2006';
 
-// Pre-seeded student roster (24 students)
+// Pre-seeded student roster (21 students)
 const STUDENT_ROSTER = [
   { id: '47784', name: 'Mohammed Elsayed', email: '' },
   { id: '92169', name: 'Reem Abdelhamid',  email: '' },
@@ -19,7 +19,6 @@ const STUDENT_ROSTER = [
   { id: '31610', name: 'Mohamed Tamer',    email: '' },
   { id: '92545', name: 'Ziad khaled',      email: '' },
   { id: '95186', name: 'Menna Mosaad',     email: '' },
-  { id: '35567', name: 'Amr Sabry',        email: '' },
   { id: '11006', name: 'Khloud Mahdy',     email: '' },
   { id: '32755', name: 'Mariam Shaban',    email: '' },
   { id: '52345', name: 'Muhammed Fouad',   email: '' },
@@ -29,9 +28,7 @@ const STUDENT_ROSTER = [
   { id: '38231', name: 'Sama Saber',       email: '' },
   { id: '40106', name: 'Bothina Atef',     email: '' },
   { id: '24055', name: 'Jana fahim',       email: '' },
-  { id: '73760', name: 'Eman nabih',       email: '' },
   { id: '26087', name: 'Enas Ahmed',       email: '' },
-  { id: '12959', name: 'Arwa Tamer',       email: '' },
   { id: '35206', name: 'Omar ibrahim',     email: '' },
   { id: '07174', name: 'Donia Ashraf',     email: '' },
   { id: '05375', name: 'Nesreen Hossam',   email: '' },
