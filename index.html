@@ -629,6 +629,41 @@ textarea{resize:vertical;min-height:70px;}
   </div>
 </div>
 
+<!-- ══════════════════════════════════════
+     GRADE EDIT / DELETE MODAL
+══════════════════════════════════════ -->
+<div class="modal-backdrop" id="gradeEditModal" onclick="if(event.target===this)closeGradeEdit()">
+  <div class="modal-box" style="max-width:440px;">
+    <div class="modal-header">
+      <h3 id="editGradeTitle">Edit Grade</h3>
+      <button class="modal-close" onclick="closeGradeEdit()">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div id="editGradeMsg"></div>
+      <div class="detail-meta" style="margin-bottom:14px;">
+        <div><span>Student: </span><strong id="editGradeStudent"></strong></div>
+        <div><span>Assessment: </span><strong id="editGradeAssessment"></strong></div>
+      </div>
+      <div class="form-group">
+        <label>Grade / Score</label>
+        <input type="number" id="editGradeVal" step="any" min="0"/>
+      </div>
+      <div class="form-group">
+        <label>Max Grade</label>
+        <input type="number" id="editGradeMax" step="any" min="0"/>
+      </div>
+      <div class="form-group" id="editGradeNotesWrap">
+        <label>Notes (optional)</label>
+        <textarea id="editGradeNotes" placeholder="Notes..."></textarea>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;margin-top:8px;">
+        <button class="btn btn-danger" id="deleteGradeBtn" onclick="deleteEditedGrade()">Delete Grade</button>
+        <button class="btn btn-success" id="saveEditedGradeBtn" onclick="saveEditedGrade()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    CONFIG
@@ -1770,11 +1805,13 @@ function renderSubmissions(){
   }
 
   const tableHtml = `<div class="table-wrap"><table class="subs-table">
-    <thead><tr><th>#</th><th>Name</th><th>ID</th><th>Quiz</th><th>Score</th><th>%</th><th>Time</th><th>Switches</th><th>Submitted</th><th></th></tr></thead>
+    <thead><tr><th>#</th><th>Name</th><th>ID</th><th>Quiz</th><th>Score</th><th>%</th><th>Time</th><th>Switches</th><th>Submitted</th><th>Actions</th></tr></thead>
     <tbody>${subs.map((s,i)=>{const pct=s.maxGrade?Math.round((s.score/s.maxGrade)*100):'-';const m=Math.floor((s.timeTaken||0)/60),sec=(s.timeTaken||0)%60;
       const hasAnswers = !!(s.answersJson && s.answersJson !== '');
-      const detailBtn = hasAnswers ? `<button class="btn btn-outline btn-sm" onclick="openSubDetail(${i})" style="white-space:nowrap;">View Detail</button>` : '<span style="font-size:11px;color:var(--text-muted);">—</span>';
-      return `<tr><td>${i+1}</td><td>${s.name}</td><td>${s.studentId}</td><td>${s.quizTitle||''}</td><td><strong>${s.score}/${s.maxGrade}</strong></td><td>${pct}%</td><td>${m}:${sec<10?'0':''}${sec}</td><td style="color:${s.tabSwitchCount>0?'var(--danger)':'inherit'}">${s.tabSwitchCount||0}</td><td style="font-size:11px;">${s.submittedAt||''}</td><td>${detailBtn}</td></tr>`;
+      const detailBtn = hasAnswers ? `<button class="btn btn-outline btn-sm" onclick="openSubDetail(${i})" style="padding:4px 9px;font-size:12px;">Detail</button>` : '';
+      const editBtn = s.rowNum ? `<button class="btn btn-primary btn-sm" onclick="openSubGradeEdit(${i})" style="padding:4px 9px;font-size:12px;">Edit</button>` : '';
+      const delBtn  = s.rowNum ? `<button class="btn btn-danger btn-sm" onclick="deleteSubRow(${i})" style="padding:4px 9px;font-size:12px;">Delete</button>` : '';
+      return `<tr><td>${i+1}</td><td>${s.name}</td><td>${s.studentId}</td><td>${s.quizTitle||''}</td><td><strong>${s.score}/${s.maxGrade}</strong></td><td>${pct}%</td><td>${m}:${sec<10?'0':''}${sec}</td><td style="color:${s.tabSwitchCount>0?'var(--danger)':'inherit'}">${s.tabSwitchCount||0}</td><td style="font-size:11px;">${s.submittedAt||''}</td><td><div style="display:flex;gap:5px;flex-wrap:nowrap;">${detailBtn}${editBtn}${delBtn}</div></td></tr>`;
     }).join('')}</tbody></table></div>`;
 
   content.innerHTML = tableHtml;
@@ -1881,6 +1918,143 @@ function closeSubDetail(){
   document.getElementById('subDetailModal').classList.remove('open');
   document.body.style.overflow = '';
 }
+
+function getSortedSubmissions(){
+  const subs = [...submissionsData];
+  const sortMode = document.getElementById('subsSort') ? document.getElementById('subsSort').value : 'latest';
+  if(sortMode==='score-desc'){
+    subs.sort((a,b)=>(b.maxGrade?b.score/b.maxGrade:-1)-(a.maxGrade?a.score/a.maxGrade:-1) || (Number(b.score)||0)-(Number(a.score)||0));
+  } else if(sortMode==='score-asc'){
+    subs.sort((a,b)=>(a.maxGrade?a.score/a.maxGrade:999)-(b.maxGrade?b.score/b.maxGrade:999) || (Number(a.score)||0)-(Number(b.score)||0));
+  } else if(sortMode==='name-asc'){
+    subs.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));
+  } else if(sortMode==='name-desc'){
+    subs.sort((a,b)=>String(b.name||'').localeCompare(String(a.name||'')));
+  } else if(sortMode==='id-asc'){
+    subs.sort((a,b)=>(parseInt(a.studentId,10)||0)-(parseInt(b.studentId,10)||0) || String(a.studentId||'').localeCompare(String(b.studentId||'')));
+  }
+  return subs;
+}
+
+let editGradeCtx = null;
+
+function openSubGradeEdit(idx){
+  const s = getSortedSubmissions()[idx];
+  if(!s) return;
+  openGradeEdit({
+    source: 'submission',
+    rowNum: s.rowNum,
+    studentId: s.studentId,
+    studentName: s.name,
+    assessment: s.quizTitle || 'Quiz',
+    grade: s.score,
+    maxGrade: s.maxGrade,
+    notes: '',
+  });
+}
+
+async function deleteSubRow(idx){
+  const s = getSortedSubmissions()[idx];
+  if(!s || !s.rowNum) return;
+  if(!confirm(`Delete "${s.quizTitle}" submission (${s.score}/${s.maxGrade}) for ${s.name}?`)) return;
+  try{
+    const res = await fetch(CONFIG.appsScriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({ action:'deleteSubmission', rowNum:s.rowNum, studentId:s.studentId, adminKey:CONFIG.adminPassword })
+    });
+    const data = await res.json();
+    if(data.ok){
+      toast('Submission deleted.');
+      loadSubmissions();
+      if(gradeBookData) loadGradeBook();
+    } else {
+      alert(data.error || 'Failed to delete submission.');
+    }
+  }catch(e){ alert('Connection failed.'); }
+}
+
+function openGradeEdit(ctx){
+  editGradeCtx = ctx;
+  document.getElementById('editGradeMsg').innerHTML = '';
+  document.getElementById('editGradeTitle').textContent = ctx.source === 'submission' ? 'Edit / Delete Quiz Grade' : 'Edit / Delete Grade';
+  document.getElementById('editGradeStudent').textContent = `${ctx.studentName} (${ctx.studentId})`;
+  document.getElementById('editGradeAssessment').textContent = ctx.assessment;
+  document.getElementById('editGradeVal').value = ctx.grade !== undefined && ctx.grade !== '' ? ctx.grade : '';
+  document.getElementById('editGradeMax').value = ctx.maxGrade !== undefined && ctx.maxGrade !== '' ? ctx.maxGrade : '';
+  const notesWrap = document.getElementById('editGradeNotesWrap');
+  if(ctx.source === 'submission'){
+    notesWrap.style.display = 'none';
+  } else {
+    notesWrap.style.display = 'block';
+    document.getElementById('editGradeNotes').value = ctx.notes || '';
+  }
+  document.getElementById('gradeEditModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeGradeEdit(){
+  document.getElementById('gradeEditModal').classList.remove('open');
+  document.body.style.overflow = '';
+  editGradeCtx = null;
+}
+
+async function saveEditedGrade(){
+  if(!editGradeCtx) return;
+  const val = document.getElementById('editGradeVal').value;
+  const maxVal = document.getElementById('editGradeMax').value;
+  const notes = document.getElementById('editGradeNotes').value.trim();
+  const msgEl = document.getElementById('editGradeMsg');
+  const btn = document.getElementById('saveEditedGradeBtn');
+  if(val === '' || maxVal === ''){
+    msgEl.innerHTML = '<div class="alert alert-error">Grade and Max Grade are required.</div>';
+    return;
+  }
+  btn.disabled = true; btn.textContent = 'Saving...';
+  try{
+    const payload = editGradeCtx.source === 'submission'
+      ? { action:'updateSubmissionGrade', rowNum:editGradeCtx.rowNum, studentId:editGradeCtx.studentId, score:Number(val), maxGrade:Number(maxVal), adminKey:CONFIG.adminPassword }
+      : { action:'setGrade', studentId:editGradeCtx.studentId, assessment:editGradeCtx.assessment, grade:Number(val), maxGrade:Number(maxVal), notes, adminKey:CONFIG.adminPassword };
+    const res = await fetch(CONFIG.appsScriptUrl, { method:'POST', body:JSON.stringify(payload) });
+    const data = await res.json();
+    if(data.ok){
+      toast('Grade updated.');
+      closeGradeEdit();
+      loadSubmissions();
+      loadGradeBook();
+    } else {
+      msgEl.innerHTML = `<div class="alert alert-error">${data.error || 'Failed to update.'}</div>`;
+    }
+  }catch(e){
+    msgEl.innerHTML = '<div class="alert alert-error">Connection failed.</div>';
+  }
+  btn.disabled = false; btn.textContent = 'Save Changes';
+}
+
+async function deleteEditedGrade(){
+  if(!editGradeCtx) return;
+  if(!confirm(`Delete "${editGradeCtx.assessment}" grade for ${editGradeCtx.studentName}?`)) return;
+  const msgEl = document.getElementById('editGradeMsg');
+  const btn = document.getElementById('deleteGradeBtn');
+  btn.disabled = true; btn.textContent = 'Deleting...';
+  try{
+    const payload = editGradeCtx.source === 'submission'
+      ? { action:'deleteSubmission', rowNum:editGradeCtx.rowNum, studentId:editGradeCtx.studentId, adminKey:CONFIG.adminPassword }
+      : { action:'deleteGrade', rowNum:editGradeCtx.rowNum, studentId:editGradeCtx.studentId, assessment:editGradeCtx.assessment, adminKey:CONFIG.adminPassword };
+    const res = await fetch(CONFIG.appsScriptUrl, { method:'POST', body:JSON.stringify(payload) });
+    const data = await res.json();
+    if(data.ok){
+      toast('Grade deleted.');
+      closeGradeEdit();
+      loadSubmissions();
+      loadGradeBook();
+    } else {
+      msgEl.innerHTML = `<div class="alert alert-error">${data.error || 'Failed to delete.'}</div>`;
+    }
+  }catch(e){
+    msgEl.innerHTML = '<div class="alert alert-error">Connection failed.</div>';
+  }
+  btn.disabled = false; btn.textContent = 'Delete Grade';
+}
 async function loadStudentList(){
   const content=document.getElementById('studentsListContent');
   content.innerHTML='<div class="loading-wrap"><div class="spinner"></div>Loading...</div>';
@@ -1938,7 +2112,7 @@ function renderGradeBook(){
     if(filter && g.assessment !== filter) return;
     const norm = normalizeStudentId(g.studentId);
     if(!studentMap[norm]) studentMap[norm]={id:g.studentId, name:g.studentName||g.studentId, grades:{}};
-    studentMap[norm].grades[g.assessment]={grade:g.grade, max:g.maxGrade};
+    studentMap[norm].grades[g.assessment]={grade:g.grade, max:g.maxGrade, source:'manual', rowNum:g.rowNum, notes:g.notes||''};
   });
 
   // From quiz submissions
@@ -1946,11 +2120,9 @@ function renderGradeBook(){
     if(filter && g.quizTitle !== filter) return;
     const norm = normalizeStudentId(g.studentId);
     if(!studentMap[norm]) studentMap[norm]={id:g.studentId, name:g.name||g.studentId, grades:{}};
-    // Only keep latest submission per quiz
+    // Keep latest submission per quiz
     const key = g.quizTitle;
-    if(!studentMap[norm].grades[key]){
-      studentMap[norm].grades[key]={grade:g.score, max:g.maxGrade};
-    }
+    studentMap[norm].grades[key]={grade:g.score, max:g.maxGrade, source:'submission', rowNum:g.rowNum, notes:''};
   });
 
   // Also include students with no grades and prefer ACTIVE_ROSTER ID/name
@@ -2013,7 +2185,17 @@ function renderGradeBook(){
       const pct = g.max ? Math.round((g.grade/g.max)*100) : null;
       let color = '';
       if(pct!==null){ color = pct>=80?'color:var(--success)':pct>=60?'color:var(--warn)':'color:var(--danger)'; }
-      return `<td style="${color};font-weight:600;">${g.grade}/${g.max}${pct!==null?`<br><span style="font-size:10px;opacity:.7">${pct}%</span>`:''}</td>`;
+      const editArg = JSON.stringify({
+        source: g.source || 'manual',
+        rowNum: g.rowNum || null,
+        studentId: s.id,
+        studentName: s.name,
+        assessment: a,
+        grade: g.grade,
+        maxGrade: g.max,
+        notes: g.notes || '',
+      }).replace(/"/g, '&quot;');
+      return `<td style="${color};font-weight:600;cursor:pointer;" title="Click to edit or delete" onclick="openGradeEdit(${editArg})">${g.grade}/${g.max}${pct!==null?`<br><span style="font-size:10px;opacity:.7">${pct}%</span>`:''}</td>`;
     }).join('');
 
     const totalPct = s.totalMax ? Math.round((s.totalEarned/s.totalMax)*100) : null;

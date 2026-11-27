@@ -137,10 +137,13 @@ function doPost(e) {
     return jsonOut({ error: 'Unauthorized' });
   }
 
-  if (action === 'setGrade')      return jsonOut(setGrade(body));
-  if (action === 'addStudent')    return jsonOut(addStudent(body));
-  if (action === 'deleteStudent') return jsonOut(deleteStudent(body));
-  if (action === 'grantRetake')   return jsonOut(grantRetake(body));
+  if (action === 'setGrade')              return jsonOut(setGrade(body));
+  if (action === 'deleteGrade')           return jsonOut(deleteGrade(body));
+  if (action === 'updateSubmissionGrade') return jsonOut(updateSubmissionGrade(body));
+  if (action === 'deleteSubmission')      return jsonOut(deleteSubmission(body));
+  if (action === 'addStudent')            return jsonOut(addStudent(body));
+  if (action === 'deleteStudent')         return jsonOut(deleteStudent(body));
+  if (action === 'grantRetake')           return jsonOut(grantRetake(body));
 
   return jsonOut({ error: 'Unknown action' });
 }
@@ -176,8 +179,9 @@ function getAllGrades() {
   if (gs && gs.getLastRow() > 1) {
     const data = gs.getDataRange().getValues();
     const h    = getHeaders(gs);
-    data.slice(1).forEach(row => {
+    data.slice(1).forEach((row, idx) => {
       manualGrades.push({
+        rowNum:      idx + 2,
         studentId:   String(row[h['Student ID']]   || '').trim(),
         studentName: String(row[h['Student Name']] || '').trim(),
         assessment:  String(row[h['Assessment']]   || '').trim(),
@@ -195,13 +199,14 @@ function getAllGrades() {
   if (ss && ss.getLastRow() > 1) {
     const data = ss.getDataRange().getValues();
     const h    = getHeaders(ss);
-    data.slice(1).forEach(row => {
+    data.slice(1).forEach((row, idx) => {
       submissions.push({
-        studentId:  String(row[h['Student ID']] || '').trim(),
-        name:       String(row[h['Name']]       || '').trim(),
-        quizTitle:  String(row[h['Quiz Title']] || '').trim(),
-        score:      row[h['Score']],
-        maxGrade:   row[h['Max Grade']],
+        rowNum:      idx + 2,
+        studentId:   String(row[h['Student ID']] || '').trim(),
+        name:        String(row[h['Name']]       || '').trim(),
+        quizTitle:   String(row[h['Quiz Title']] || '').trim(),
+        score:       row[h['Score']],
+        maxGrade:    row[h['Max Grade']],
         submittedAt: row[h['Submitted At']] ? new Date(row[h['Submitted At']]).toLocaleDateString('en-GB') : '',
       });
     });
@@ -364,7 +369,8 @@ function getSubmissions() {
   if (!sheet || sheet.getLastRow() <= 1) return { submissions: [] };
   const data = sheet.getDataRange().getValues();
   const h    = getHeaders(sheet);
-  const submissions = data.slice(1).map(row => ({
+  const submissions = data.slice(1).map((row, idx) => ({
+    rowNum:         idx + 2,
     name:           String(row[h['Name']]            || ''),
     studentId:      String(row[h['Student ID']]      || ''),
     email:          String(row[h['Email']]           || ''),
@@ -449,13 +455,17 @@ function setGrade(body) {
     if (sheet.getLastRow() > 1) {
       const data = sheet.getDataRange().getValues();
       const h    = getHeaders(sheet);
+      const normId = normalizeStudentId(studentId);
       for (let i = 1; i < data.length; i++) {
         if (
-          String(data[i][h['Student ID']]).trim() === String(studentId).trim() &&
-          String(data[i][h['Assessment']]).trim()  === String(assessment).trim()
+          normalizeStudentId(data[i][h['Student ID']]) === normId &&
+          String(data[i][h['Assessment']]).trim()     === String(assessment).trim()
         ) {
           // Update existing row
           sheet.getRange(i + 1, h['Grade'] + 1).setValue(grade);
+          if (maxGrade !== '' && h['Max Grade'] !== undefined) {
+            sheet.getRange(i + 1, h['Max Grade'] + 1).setValue(maxGrade);
+          }
           sheet.getRange(i + 1, h['Notes'] + 1).setValue(notes || '');
           sheet.getRange(i + 1, h['Date']  + 1).setValue(new Date());
           return { ok: true, updated: true };
@@ -474,6 +484,105 @@ function setGrade(body) {
     ]);
     sheet.getRange(sheet.getLastRow(), 6).setNumberFormat('yyyy-mm-dd');
     return { ok: true, updated: false };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ───────────────────────────────────────────────────────────
+//  WRITE: Delete a specific manual grade (admin)
+// ───────────────────────────────────────────────────────────
+function deleteGrade(body) {
+  const { studentId, assessment, rowNum } = body;
+  const sheet = getSheet('Grades');
+  if (!sheet || sheet.getLastRow() <= 1) return { error: 'Grades sheet empty.' };
+
+  const lock = LockService.getScriptLock();
+  try { lock.waitLock(10000); } catch(e) { return { error: 'Server busy.' }; }
+
+  try {
+    const data = sheet.getDataRange().getValues();
+    const h    = getHeaders(sheet);
+    const normId = studentId ? normalizeStudentId(studentId) : '';
+    const r = Number(rowNum);
+    if (r >= 2 && r <= data.length) {
+      const rowId = normalizeStudentId(data[r - 1][h['Student ID']]);
+      const rowAs = String(data[r - 1][h['Assessment']] || '').trim();
+      if ((!normId || rowId === normId) && (!assessment || rowAs === String(assessment).trim())) {
+        sheet.deleteRow(r);
+        return { ok: true };
+      }
+    }
+    if (!normId || !assessment) return { error: 'Student ID and Assessment required.' };
+    for (let i = data.length - 1; i >= 1; i--) {
+      if (
+        normalizeStudentId(data[i][h['Student ID']]) === normId &&
+        String(data[i][h['Assessment']]).trim()     === String(assessment).trim()
+      ) {
+        sheet.deleteRow(i + 1);
+        return { ok: true };
+      }
+    }
+    return { error: 'Grade entry not found.' };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ───────────────────────────────────────────────────────────
+//  WRITE: Update a quiz submission grade (admin)
+// ───────────────────────────────────────────────────────────
+function updateSubmissionGrade(body) {
+  const { rowNum, studentId, score, maxGrade } = body;
+  if (!rowNum || score === undefined) return { error: 'rowNum and score are required.' };
+
+  const sheet = getSheet('Submissions');
+  if (!sheet || sheet.getLastRow() <= 1) return { error: 'Submissions sheet empty.' };
+
+  const lock = LockService.getScriptLock();
+  try { lock.waitLock(10000); } catch(e) { return { error: 'Server busy.' }; }
+
+  try {
+    const r = Number(rowNum);
+    if (r < 2 || r > sheet.getLastRow()) return { error: 'Submission row not found.' };
+    const h = getHeaders(sheet);
+    if (studentId) {
+      const rowId = normalizeStudentId(sheet.getRange(r, h['Student ID'] + 1).getValue());
+      if (rowId !== normalizeStudentId(studentId)) return { error: 'Row mismatch.' };
+    }
+    sheet.getRange(r, h['Score'] + 1).setValue(Number(score));
+    if (maxGrade !== undefined && maxGrade !== '' && h['Max Grade'] !== undefined) {
+      sheet.getRange(r, h['Max Grade'] + 1).setValue(Number(maxGrade));
+    }
+    return { ok: true };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ───────────────────────────────────────────────────────────
+//  WRITE: Delete a specific quiz submission (admin)
+// ───────────────────────────────────────────────────────────
+function deleteSubmission(body) {
+  const { rowNum, studentId } = body;
+  if (!rowNum) return { error: 'rowNum is required.' };
+
+  const sheet = getSheet('Submissions');
+  if (!sheet || sheet.getLastRow() <= 1) return { error: 'Submissions sheet empty.' };
+
+  const lock = LockService.getScriptLock();
+  try { lock.waitLock(10000); } catch(e) { return { error: 'Server busy.' }; }
+
+  try {
+    const r = Number(rowNum);
+    if (r < 2 || r > sheet.getLastRow()) return { error: 'Submission row not found.' };
+    const h = getHeaders(sheet);
+    if (studentId) {
+      const rowId = normalizeStudentId(sheet.getRange(r, h['Student ID'] + 1).getValue());
+      if (rowId !== normalizeStudentId(studentId)) return { error: 'Row mismatch.' };
+    }
+    sheet.deleteRow(r);
+    return { ok: true };
   } finally {
     lock.releaseLock();
   }
