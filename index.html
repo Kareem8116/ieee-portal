@@ -708,6 +708,16 @@ const CONFIG = {
 };
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   API HELPERS
+   Apps Script redirects break POST body → send writes as GET ?payload=JSON
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+async function apiWrite(payload) {
+  const url = CONFIG.appsScriptUrl + '?payload=' + encodeURIComponent(JSON.stringify(payload));
+  const res = await fetch(url, { redirect: 'follow' });
+  return res.json();
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    STUDENT ROSTER (21 students)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 const STUDENT_ROSTER = [
@@ -1410,20 +1420,17 @@ async function submitQuiz(autoSubmit=false){
   // Send to Apps Script
   try{
     const answersJson = JSON.stringify(answers);
-    await fetch(CONFIG.appsScriptUrl,{
-      method:'POST',
-      body:JSON.stringify({
-        action:'submitQuiz',
-        name:currentStudent.name,
-        studentId:currentStudent.id,
-        email:'',
-        quizTitle:currentExam?currentExam.label:'Quiz',
-        score,maxGrade,
-        totalQuestions:QUESTIONS.length,
-        correctAnswers:correct,
-        timeTaken,tabSwitchCount,
-        answersJson,
-      })
+    await apiWrite({
+      action:'submitQuiz',
+      name:currentStudent.name,
+      studentId:currentStudent.id,
+      email:'',
+      quizTitle:currentExam?currentExam.label:'Quiz',
+      score,maxGrade,
+      totalQuestions:QUESTIONS.length,
+      correctAnswers:correct,
+      timeTaken,tabSwitchCount,
+      answersJson,
     });
     toast('Answers submitted successfully.');
   }catch(e){toast('Submission failed — check your connection.');}
@@ -1597,17 +1604,7 @@ async function grantRetake(){
   btn.disabled = true;
   btn.textContent = 'Opening...';
   try{
-    const res = await fetch(CONFIG.appsScriptUrl, {
-      method: 'POST',
-      body: JSON.stringify({
-        action: 'grantRetake',
-        target,
-        examId,
-        examLabel,
-        adminKey: CONFIG.adminPassword,
-      })
-    });
-    const data = await res.json();
+    const data = await apiWrite({ action:'grantRetake', target, examId, examLabel, adminKey:CONFIG.adminPassword });
     if(data.ok){
       msgEl.innerHTML = `<div class="alert alert-success">Retake opened (1x) for <strong>${targetLabel}</strong> on <strong>${examLabel}</strong>.</div>`;
       toast(`Retake opened for ${targetLabel}.`);
@@ -1687,8 +1684,7 @@ async function saveGrade(){
   if(!studentId||!assessment||grade===''||maxGrade===''){msgEl.innerHTML='<div class="alert alert-error">Please fill Student, Assessment, Grade and Max Grade.</div>';return;}
   const btn=document.getElementById('saveGradeBtn');btn.disabled=true;btn.textContent='Saving...';
   try{
-    const res=await fetch(CONFIG.appsScriptUrl,{method:'POST',body:JSON.stringify({action:'setGrade',studentId,assessment,grade:Number(grade),maxGrade:Number(maxGrade),notes,adminKey:CONFIG.adminPassword})});
-    const data=await res.json();
+    const data=await apiWrite({action:'setGrade',studentId,assessment,grade:Number(grade),maxGrade:Number(maxGrade),notes,adminKey:CONFIG.adminPassword});
     if(data.ok){msgEl.innerHTML='<div class="alert alert-success">Grade saved successfully.</div>';document.getElementById('gradeValue').value='';document.getElementById('gradeMax').value='';document.getElementById('gradeNotes').value='';}
     else{msgEl.innerHTML=`<div class="alert alert-error">${data.error||'Unknown error.'}</div>`;}
   }catch(e){msgEl.innerHTML='<div class="alert alert-error">Connection failed.</div>';}
@@ -1697,8 +1693,7 @@ async function saveGrade(){
 async function deleteStudent(id, name){
   if(!confirm(`Remove "${name}" (ID: ${id}) and ALL their grades/submissions?\nThis cannot be undone.`)) return;
   try{
-    const res=await fetch(CONFIG.appsScriptUrl,{method:'POST',body:JSON.stringify({action:'deleteStudent',studentId:id,adminKey:CONFIG.adminPassword})});
-    const data=await res.json();
+    const data=await apiWrite({action:'deleteStudent',studentId:id,adminKey:CONFIG.adminPassword});
     if(data.ok){
       const norm = normalizeStudentId(id);
       ACTIVE_ROSTER = ACTIVE_ROSTER.filter(s => normalizeStudentId(s.id) !== norm);
@@ -1728,8 +1723,7 @@ async function addStudent(){
   const msgEl=document.getElementById('addStudentMsg');msgEl.innerHTML='';
   if(!name||!id){msgEl.innerHTML='<div class="alert alert-error">Name and ID are required.</div>';return;}
   try{
-    const res=await fetch(CONFIG.appsScriptUrl,{method:'POST',body:JSON.stringify({action:'addStudent',name,studentId:id,email:'',adminKey:CONFIG.adminPassword})});
-    const data=await res.json();
+    const data=await apiWrite({action:'addStudent',name,studentId:id,email:'',adminKey:CONFIG.adminPassword});
     if(data.ok){
       msgEl.innerHTML='<div class="alert alert-success">Student added.</div>';
       document.getElementById('newStudentName').value='';
@@ -1955,11 +1949,7 @@ async function deleteSubRow(idx){
   if(!s || !s.rowNum) return;
   if(!confirm(`Delete "${s.quizTitle}" submission (${s.score}/${s.maxGrade}) for ${s.name}?`)) return;
   try{
-    const res = await fetch(CONFIG.appsScriptUrl, {
-      method: 'POST',
-      body: JSON.stringify({ action:'deleteSubmission', rowNum:s.rowNum, studentId:s.studentId, adminKey:CONFIG.adminPassword })
-    });
-    const data = await res.json();
+    const data = await apiWrite({ action:'deleteSubmission', rowNum:s.rowNum, studentId:s.studentId, adminKey:CONFIG.adminPassword });
     if(data.ok){
       toast('Submission deleted.');
       loadSubmissions();
@@ -2011,8 +2001,7 @@ async function saveEditedGrade(){
     const payload = editGradeCtx.source === 'submission'
       ? { action:'updateSubmissionGrade', rowNum:editGradeCtx.rowNum, studentId:editGradeCtx.studentId, score:Number(val), maxGrade:Number(maxVal), adminKey:CONFIG.adminPassword }
       : { action:'setGrade', studentId:editGradeCtx.studentId, assessment:editGradeCtx.assessment, grade:Number(val), maxGrade:Number(maxVal), notes, adminKey:CONFIG.adminPassword };
-    const res = await fetch(CONFIG.appsScriptUrl, { method:'POST', body:JSON.stringify(payload) });
-    const data = await res.json();
+    const data = await apiWrite(payload);
     if(data.ok){
       toast('Grade updated.');
       closeGradeEdit();
@@ -2037,8 +2026,7 @@ async function deleteEditedGrade(){
     const payload = editGradeCtx.source === 'submission'
       ? { action:'deleteSubmission', rowNum:editGradeCtx.rowNum, studentId:editGradeCtx.studentId, adminKey:CONFIG.adminPassword }
       : { action:'deleteGrade', rowNum:editGradeCtx.rowNum, studentId:editGradeCtx.studentId, assessment:editGradeCtx.assessment, adminKey:CONFIG.adminPassword };
-    const res = await fetch(CONFIG.appsScriptUrl, { method:'POST', body:JSON.stringify(payload) });
-    const data = await res.json();
+    const data = await apiWrite(payload);
     if(data.ok){
       toast('Grade deleted.');
       closeGradeEdit();

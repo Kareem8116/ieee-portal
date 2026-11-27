@@ -82,25 +82,35 @@ function setupSheets() {
 }
 
 // ───────────────────────────────────────────────────────────
-//  doGet — Read operations
+//  doGet — Read + Write operations (POST redirects to GET in Apps Script)
 // ───────────────────────────────────────────────────────────
 function doGet(e) {
   const params  = e.parameter || {};
   const action  = params.action || '';
   const key     = params.key   || '';
 
-  // All read actions require admin key
+  // ── If a JSON payload is passed (write-via-GET workaround) ──
+  if (params.payload) {
+    let body = {};
+    try { body = JSON.parse(params.payload); } catch(err) {
+      return jsonOut({ error: 'Invalid payload JSON.' });
+    }
+    return handleWrite(body);
+  }
+
+  // ── Read actions (require admin key via ?key=) ──
+  // Student grade lookup does NOT need adminKey (student-facing)
+  if (action === 'getGrades') {
+    const studentId = params.studentId || '';
+    return jsonOut(getStudentGrades(studentId));
+  }
+
   if (key !== ADMIN_KEY) {
     return jsonOut({ error: 'Unauthorized' });
   }
 
   if (action === 'getStudents') {
     return jsonOut(getStudents());
-  }
-
-  if (action === 'getGrades') {
-    const studentId = params.studentId || '';
-    return jsonOut(getStudentGrades(studentId));
   }
 
   if (action === 'getSubmissions') {
@@ -115,19 +125,17 @@ function doGet(e) {
 }
 
 // ───────────────────────────────────────────────────────────
-//  doPost — Write operations
+//  handleWrite — shared write logic (called by doGet payload + doPost)
 // ───────────────────────────────────────────────────────────
-function doPost(e) {
-  let body = {};
-  try { body = JSON.parse(e.postData.contents); } catch(err) {}
-
+function handleWrite(body) {
   const action   = body.action   || '';
   const adminKey = body.adminKey || '';
 
   // submitQuiz does NOT need adminKey (student-facing)
-  if (action === 'submitQuiz') {
-    return jsonOut(submitQuiz(body));
-  }
+  if (action === 'submitQuiz') return jsonOut(submitQuiz(body));
+
+  // loginStudent does NOT need adminKey
+  if (action === 'loginStudent') return jsonOut(verifyStudent(body));
 
   // All other writes need adminKey
   if (adminKey !== ADMIN_KEY) {
@@ -141,8 +149,18 @@ function doPost(e) {
   if (action === 'addStudent')            return jsonOut(addStudent(body));
   if (action === 'deleteStudent')         return jsonOut(deleteStudent(body));
   if (action === 'grantRetake')           return jsonOut(grantRetake(body));
+  if (action === 'loginAdmin')            return jsonOut({ ok: true });
 
   return jsonOut({ error: 'Unknown action' });
+}
+
+// ───────────────────────────────────────────────────────────
+//  doPost — Write operations (delegates to handleWrite)
+// ───────────────────────────────────────────────────────────
+function doPost(e) {
+  let body = {};
+  try { body = JSON.parse(e.postData.contents); } catch(err) {}
+  return handleWrite(body);
 }
 
 // ───────────────────────────────────────────────────────────
